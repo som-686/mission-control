@@ -48,15 +48,59 @@ const FALLBACK_NEWS = [
   { title: 'Tech layoffs slow as hiring picks up in AI sector', source: 'TechCrunch', time: '8h ago', description: 'AI-related job postings surge 40% while traditional tech layoffs decline quarter-over-quarter.', link: 'https://techcrunch.com/category/artificial-intelligence/' },
 ]
 
-// ── Helper: time-based greeting & subtitle ─────────
+// ── Daily quotes ────────────────────────────────────
+
+const DAILY_QUOTES = [
+  { text: 'The only way to do great work is to love what you do.', author: 'Steve Jobs' },
+  { text: 'We are what we repeatedly do. Excellence, then, is not an act, but a habit.', author: 'Aristotle' },
+  { text: 'The mind is everything. What you think you become.', author: 'Buddha' },
+  { text: 'In the middle of difficulty lies opportunity.', author: 'Albert Einstein' },
+  { text: 'It is not the strongest that survive, nor the most intelligent, but the most responsive to change.', author: 'Charles Darwin' },
+  { text: 'The unexamined life is not worth living.', author: 'Socrates' },
+  { text: 'He who has a why to live can bear almost any how.', author: 'Friedrich Nietzsche' },
+  { text: 'To live is the rarest thing in the world. Most people exist, that is all.', author: 'Oscar Wilde' },
+  { text: 'The journey of a thousand miles begins with a single step.', author: 'Lao Tzu' },
+  { text: 'Know thyself.', author: 'Delphi Oracle' },
+  { text: 'Man is condemned to be free; because once thrown into the world, he is responsible for everything he does.', author: 'Jean-Paul Sartre' },
+  { text: 'Happiness is not something ready-made. It comes from your own actions.', author: 'Dalai Lama' },
+  { text: 'The only true wisdom is in knowing you know nothing.', author: 'Socrates' },
+  { text: 'Do not go where the path may lead, go instead where there is no path and leave a trail.', author: 'Ralph Waldo Emerson' },
+  { text: 'What we know is a drop, what we don\'t know is an ocean.', author: 'Isaac Newton' },
+  { text: 'A ship in harbor is safe, but that is not what ships are built for.', author: 'John A. Shedd' },
+  { text: 'Life can only be understood backwards; but it must be lived forwards.', author: 'Søren Kierkegaard' },
+  { text: 'The mind that opens to a new idea never returns to its original size.', author: 'Albert Einstein' },
+  { text: 'I think, therefore I am.', author: 'René Descartes' },
+  { text: 'It does not matter how slowly you go as long as you do not stop.', author: 'Confucius' },
+  { text: 'Knowing is not enough, we must apply. Willing is not enough, we must do.', author: 'Johann Wolfgang von Goethe' },
+  { text: 'The best time to plant a tree was 20 years ago. The second best time is now.', author: 'Chinese Proverb' },
+  { text: 'Simplicity is the ultimate sophistication.', author: 'Leonardo da Vinci' },
+  { text: 'Not all those who wander are lost.', author: 'J.R.R. Tolkien' },
+  { text: 'The world breaks everyone, and afterward, many are strong at the broken places.', author: 'Ernest Hemingway' },
+  { text: 'What you seek is seeking you.', author: 'Rumi' },
+  { text: 'One must imagine Sisyphus happy.', author: 'Albert Camus' },
+  { text: 'Doubt is the origin of wisdom.', author: 'René Descartes' },
+  { text: 'An unexamined life is not worth living, but a life unexamined by yourself is not your own.', author: 'Somnath Chakravarty' },
+  { text: 'Downshift to discover. Speed gives you distance, but slowing down gives you depth.', author: 'Somnath Chakravarty' },
+  { text: 'The impediment to action advances action. What stands in the way becomes the way.', author: 'Marcus Aurelius' },
+]
+
+function getDailyQuote() {
+  // Deterministic: pick quote based on day of year
+  const now = new Date()
+  const start = new Date(now.getFullYear(), 0, 0)
+  const dayOfYear = Math.floor((now - start) / (1000 * 60 * 60 * 24))
+  return DAILY_QUOTES[dayOfYear % DAILY_QUOTES.length]
+}
+
+// ── Helper: time-based greeting ─────────────────────
 
 function getGreeting() {
   const h = new Date().getHours()
-  if (h < 6) return { greeting: 'Burning the midnight oil', emoji: '🌙', subtitle: 'The quiet hours fuel the biggest ideas.' }
-  if (h < 12) return { greeting: 'Good morning', emoji: '☀️', subtitle: 'A fresh start — make it count.' }
-  if (h < 17) return { greeting: 'Good afternoon', emoji: '🚀', subtitle: 'Deep in the zone. Keep the momentum.' }
-  if (h < 21) return { greeting: 'Good evening', emoji: '🌆', subtitle: 'Wind down, reflect, plan tomorrow.' }
-  return { greeting: 'Good night', emoji: '✨', subtitle: 'Rest well — tomorrow brings new challenges.' }
+  if (h < 6) return { greeting: 'Burning the midnight oil', emoji: '🌙' }
+  if (h < 12) return { greeting: 'Good morning', emoji: '☀️' }
+  if (h < 17) return { greeting: 'Good afternoon', emoji: '🚀' }
+  if (h < 21) return { greeting: 'Good evening', emoji: '🌆' }
+  return { greeting: 'Good night', emoji: '✨' }
 }
 
 // ── Main Dashboard ──────────────────────────────────
@@ -80,7 +124,8 @@ export default function Dashboard() {
   const [googleError, setGoogleError] = useState(null)
   const googleToken = getGoogleToken()
 
-  const { greeting, emoji, subtitle } = getGreeting()
+  const { greeting, emoji } = getGreeting()
+  const dailyQuote = getDailyQuote()
   const userName = 'Som'
 
   // ── Fetch News ─────────────────────────────────
@@ -89,7 +134,7 @@ export default function Dashboard() {
     setNewsLoading(true)
     try {
       const res = await fetch(
-        'https://newsdata.io/api/1/latest?apikey=pub_f7de664c6e4d4ff184f2a751089a9dec&country=in&language=en&category=business,technology,politics'
+        `https://newsdata.io/api/1/latest?apikey=${import.meta.env.VITE_NEWSDATA_API_KEY || ''}&country=in&language=en&category=business,technology,politics`
       )
       if (!res.ok) throw new Error('News fetch failed')
       const data = await res.json()
@@ -246,9 +291,12 @@ export default function Dashboard() {
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">
               {greeting}, {userName} {emoji}
             </h1>
-            <p className="text-gray-500 text-base mt-2 max-w-md">
-              {subtitle}
-            </p>
+            <div className="mt-3 max-w-xl px-4 py-3 bg-gray-100 border-l-4 border-gray-900 rounded-r-xl">
+              <p className="text-gray-700 text-base italic font-medium leading-relaxed">
+                "{dailyQuote.text}"
+              </p>
+              <p className="text-gray-400 text-sm mt-1.5 not-italic">— {dailyQuote.author}</p>
+            </div>
           </div>
           <p className="text-gray-400 text-sm font-medium tabular-nums">
             {format(new Date(), 'EEEE, MMMM d, yyyy')}
