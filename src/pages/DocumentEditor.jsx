@@ -63,7 +63,7 @@ export default function DocumentEditor() {
     content: '',
     editorProps: {
       attributes: {
-        class: 'tiptap prose prose-invert max-w-none focus:outline-none text-slate-200 leading-relaxed',
+        class: 'tiptap prose max-w-none focus:outline-none text-gray-800 leading-relaxed',
       },
       handleKeyDown: (view, event) => {
         if (slashOpen) {
@@ -220,12 +220,12 @@ export default function DocumentEditor() {
   ]
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-white">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-slate-800/60">
+      <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200">
         <button
           onClick={() => navigate('/documents')}
-          className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors"
+          className="flex items-center gap-2 text-gray-500 hover:text-gray-900 text-sm transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Documents
@@ -233,13 +233,13 @@ export default function DocumentEditor() {
 
         <div className="flex items-center gap-2 text-xs">
           {saving && (
-            <span className="flex items-center gap-1.5 text-slate-500">
+            <span className="flex items-center gap-1.5 text-gray-400">
               <Loader2 className="w-3 h-3 animate-spin" />
               Saving…
             </span>
           )}
           {saved && (
-            <span className="flex items-center gap-1.5 text-emerald-400">
+            <span className="flex items-center gap-1.5 text-gray-600">
               <Check className="w-3 h-3" />
               Saved
             </span>
@@ -248,18 +248,18 @@ export default function DocumentEditor() {
       </div>
 
       {/* Toolbar */}
-      <div className="flex items-center gap-0.5 px-6 py-2 border-b border-slate-800/40">
+      <div className="flex items-center gap-0.5 px-6 py-2 border-b border-gray-100">
         {toolbarButtons.map((btn, i) =>
           btn.divider ? (
-            <div key={i} className="w-px h-5 bg-slate-700/50 mx-1" />
+            <div key={i} className="w-px h-5 bg-gray-200 mx-1" />
           ) : (
             <button
               key={i}
               onClick={btn.action}
               className={`p-1.5 rounded-md transition-colors ${
                 btn.active
-                  ? 'bg-indigo-600/20 text-indigo-300'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  ? 'bg-black text-white'
+                  : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100'
               }`}
             >
               <btn.icon className="w-4 h-4" />
@@ -275,7 +275,7 @@ export default function DocumentEditor() {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Untitled"
-          className="w-full text-3xl font-bold text-white bg-transparent border-none outline-none placeholder-slate-600 mb-6"
+          className="w-full text-3xl font-bold text-gray-900 bg-transparent border-none outline-none placeholder-gray-300 mb-6"
         />
 
         <div className="relative">
@@ -284,7 +284,7 @@ export default function DocumentEditor() {
           {/* Slash command menu */}
           {slashOpen && filteredCommands.length > 0 && (
             <div
-              className="absolute z-50 bg-slate-800 border border-slate-700/60 rounded-xl shadow-2xl py-2 w-56"
+              className="absolute z-50 bg-white border border-gray-200 rounded-xl shadow-lg py-2 w-56"
               style={{ top: slashPos.top, left: slashPos.left }}
             >
               {filteredCommands.map((cmd, i) => (
@@ -296,8 +296,8 @@ export default function DocumentEditor() {
                   }}
                   className={`w-full flex items-center gap-3 px-3 py-2 text-sm transition-colors ${
                     i === slashIndex
-                      ? 'bg-indigo-600/20 text-indigo-300'
-                      : 'text-slate-300 hover:bg-slate-700/60'
+                      ? 'bg-gray-100 text-gray-900'
+                      : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
                   <cmd.icon className="w-4 h-4 flex-shrink-0" />

@@ -24,11 +24,36 @@ import {
 } from 'lucide-react'
 import { format } from 'date-fns'
 
+// Extract plain text from Tiptap JSON or plain string
+function extractPlainText(description) {
+  if (!description) return ''
+  // If it looks like JSON, try to parse and extract text
+  const trimmed = description.trim()
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    try {
+      const doc = JSON.parse(trimmed)
+      if (doc && doc.type === 'doc' && doc.content) {
+        const texts = []
+        function walk(node) {
+          if (node.text) texts.push(node.text)
+          if (node.content) node.content.forEach(walk)
+        }
+        walk(doc)
+        return texts.join(' ').trim()
+      }
+      return ''
+    } catch {
+      return ''
+    }
+  }
+  return description
+}
+
 const PRIORITIES = {
-  urgent: { label: 'Urgent', color: 'bg-red-500/20 text-red-300 border-red-500/30' },
-  high: { label: 'High', color: 'bg-orange-500/20 text-orange-300 border-orange-500/30' },
-  medium: { label: 'Medium', color: 'bg-amber-500/20 text-amber-300 border-amber-500/30' },
-  low: { label: 'Low', color: 'bg-slate-500/20 text-slate-300 border-slate-500/30' },
+  urgent: { label: 'Urgent', color: 'bg-gray-200 text-gray-800 border-gray-300' },
+  high: { label: 'High', color: 'bg-gray-100 text-gray-700 border-gray-300' },
+  medium: { label: 'Medium', color: 'bg-gray-50 text-gray-600 border-gray-200' },
+  low: { label: 'Low', color: 'bg-gray-50 text-gray-500 border-gray-200' },
 }
 
 export default function Kanban() {
@@ -76,7 +101,7 @@ export default function Kanban() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
@@ -84,10 +109,10 @@ export default function Kanban() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 lg:px-8 py-5 border-b border-slate-800/60">
+      <div className="flex items-center justify-between px-6 lg:px-8 py-5 border-b border-gray-200">
         <div>
-          <h1 className="text-2xl font-bold text-white">Kanban Board</h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-gray-900">Tasks</h1>
+          <p className="text-gray-500 text-sm mt-1">
             {cards.length} task{cards.length !== 1 ? 's' : ''} across {columns.length} columns
           </p>
         </div>
@@ -120,7 +145,7 @@ export default function Kanban() {
 
             {/* Add column */}
             {addingColumn ? (
-              <div className="w-72 flex-shrink-0 bg-slate-800/40 border border-slate-700/40 rounded-2xl p-4">
+              <div className="w-72 flex-shrink-0 bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
                 <input
                   autoFocus
                   value={newColumnTitle}
@@ -130,18 +155,18 @@ export default function Kanban() {
                     if (e.key === 'Escape') setAddingColumn(false)
                   }}
                   placeholder="Column title"
-                  className="w-full px-3 py-2 bg-slate-900/60 border border-slate-600/50 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 mb-3"
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/40 mb-3"
                 />
                 <div className="flex gap-2">
                   <button
                     onClick={handleAddColumn}
-                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm text-white font-medium transition-colors"
+                    className="px-3 py-1.5 bg-black hover:bg-gray-800 rounded-lg text-sm text-white font-medium transition-colors"
                   >
                     Add
                   </button>
                   <button
                     onClick={() => setAddingColumn(false)}
-                    className="px-3 py-1.5 text-slate-400 hover:text-white text-sm transition-colors"
+                    className="px-3 py-1.5 text-gray-500 hover:text-gray-900 text-sm transition-colors"
                   >
                     Cancel
                   </button>
@@ -150,7 +175,7 @@ export default function Kanban() {
             ) : (
               <button
                 onClick={() => setAddingColumn(true)}
-                className="w-72 flex-shrink-0 flex items-center justify-center gap-2 py-4 bg-slate-800/20 hover:bg-slate-800/40 border border-dashed border-slate-700/40 hover:border-slate-600/60 rounded-2xl text-sm text-slate-500 hover:text-slate-300 transition-all"
+                className="w-72 flex-shrink-0 flex items-center justify-center gap-2 py-4 bg-white hover:bg-gray-50 border border-dashed border-gray-300 hover:border-gray-400 rounded-2xl text-sm text-gray-400 hover:text-gray-700 transition-all"
               >
                 <Plus className="w-4 h-4" />
                 Add Column
@@ -200,9 +225,9 @@ function Column({ column, cards, onRename, onDelete, onAddCard, onEditCard, onDe
   }
 
   return (
-    <div className="w-72 flex-shrink-0 flex flex-col max-h-full">
+    <div className="w-72 flex-shrink-0 flex flex-col max-h-full bg-gray-100 rounded-2xl p-3 border border-gray-200">
       {/* Column header */}
-      <div className="flex items-center justify-between px-3 py-2 mb-3">
+      <div className="flex items-center justify-between px-1 py-1 mb-2">
         {editing ? (
           <input
             autoFocus
@@ -216,7 +241,7 @@ function Column({ column, cards, onRename, onDelete, onAddCard, onEditCard, onDe
                 setEditing(false)
               }
             }}
-            className="px-2 py-1 bg-slate-900/60 border border-slate-600/50 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 w-full"
+            className="px-2 py-1 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400/40 w-full"
           />
         ) : (
           <div className="flex items-center gap-2">
@@ -224,8 +249,8 @@ function Column({ column, cards, onRename, onDelete, onAddCard, onEditCard, onDe
               className="w-2.5 h-2.5 rounded-full flex-shrink-0"
               style={{ backgroundColor: column.color }}
             />
-            <h3 className="text-sm font-semibold text-slate-200">{column.title}</h3>
-            <span className="text-xs text-slate-500 bg-slate-800/60 px-1.5 py-0.5 rounded-md">
+            <h3 className="text-sm font-semibold text-gray-900">{column.title}</h3>
+            <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-md">
               {cards.length}
             </span>
           </div>
@@ -234,7 +259,7 @@ function Column({ column, cards, onRename, onDelete, onAddCard, onEditCard, onDe
         <div className="relative">
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="p-1 text-slate-500 hover:text-white rounded-md hover:bg-slate-800/60 transition-colors"
+            className="p-1 text-gray-400 hover:text-gray-900 rounded-md hover:bg-gray-100 transition-colors"
           >
             <MoreHorizontal className="w-4 h-4" />
           </button>
@@ -242,13 +267,13 @@ function Column({ column, cards, onRename, onDelete, onAddCard, onEditCard, onDe
           {menuOpen && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-              <div className="absolute right-0 top-8 z-50 bg-slate-800 border border-slate-700/60 rounded-xl shadow-2xl py-1.5 w-40">
+              <div className="absolute right-0 top-8 z-50 bg-white border border-gray-200 rounded-xl shadow-lg py-1.5 w-40">
                 <button
                   onClick={() => {
                     setEditing(true)
                     setMenuOpen(false)
                   }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-300 hover:bg-slate-700/60 transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   <Pencil className="w-3.5 h-3.5" />
                   Rename
@@ -260,7 +285,7 @@ function Column({ column, cards, onRename, onDelete, onAddCard, onEditCard, onDe
                     }
                     setMenuOpen(false)
                   }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-slate-700/60 transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-gray-50 transition-colors"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   Delete
@@ -277,8 +302,8 @@ function Column({ column, cards, onRename, onDelete, onAddCard, onEditCard, onDe
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
-            className={`flex-1 overflow-y-auto space-y-2 px-1 pb-2 min-h-[60px] rounded-xl transition-colors ${
-              snapshot.isDraggingOver ? 'bg-indigo-500/5' : ''
+            className={`flex-1 overflow-y-auto space-y-2 pb-2 min-h-[60px] rounded-xl transition-colors ${
+              snapshot.isDraggingOver ? 'bg-gray-200/60' : ''
             }`}
           >
             {cards.map((card, index) => (
@@ -287,25 +312,25 @@ function Column({ column, cards, onRename, onDelete, onAddCard, onEditCard, onDe
                   <div
                     ref={provided.innerRef}
                     {...provided.draggableProps}
-                    className={`group bg-slate-800/60 hover:bg-slate-800/80 border border-slate-700/40 hover:border-slate-600/50 rounded-xl p-3.5 cursor-pointer transition-all ${
-                      snapshot.isDragging ? 'shadow-2xl shadow-indigo-500/10 rotate-2' : ''
+                    className={`group bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 rounded-xl p-3.5 cursor-pointer transition-all shadow-sm ${
+                      snapshot.isDragging ? 'shadow-lg rotate-2' : ''
                     }`}
                     onClick={() => onEditCard(card)}
                   >
                     <div className="flex items-start gap-2">
                       <div
                         {...provided.dragHandleProps}
-                        className="mt-0.5 text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="mt-0.5 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity"
                       >
                         <GripVertical className="w-3.5 h-3.5" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-200 line-clamp-2">
+                        <p className="text-sm font-medium text-gray-800 line-clamp-2">
                           {card.title}
                         </p>
-                        {card.description && (
-                          <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                            {card.description}
+                        {card.description && extractPlainText(card.description) && (
+                          <p className="text-xs text-gray-400 mt-1 line-clamp-2">
+                            {extractPlainText(card.description)}
                           </p>
                         )}
                         <div className="flex items-center gap-2 mt-2.5 flex-wrap">
@@ -318,7 +343,7 @@ function Column({ column, cards, onRename, onDelete, onAddCard, onEditCard, onDe
                             </span>
                           )}
                           {card.due_date && (
-                            <span className="inline-flex items-center gap-1 text-xs text-slate-400">
+                            <span className="inline-flex items-center gap-1 text-xs text-gray-500">
                               <CalendarIcon className="w-3 h-3" />
                               {format(new Date(card.due_date), 'MMM d')}
                             </span>
@@ -327,7 +352,7 @@ function Column({ column, cards, onRename, onDelete, onAddCard, onEditCard, onDe
                             card.labels.map((label) => (
                               <span
                                 key={label}
-                                className="text-xs px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-300 border border-indigo-500/20"
+                                className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 border border-gray-200"
                               >
                                 {label}
                               </span>
@@ -339,7 +364,7 @@ function Column({ column, cards, onRename, onDelete, onAddCard, onEditCard, onDe
                           e.stopPropagation()
                           if (confirm('Delete this card?')) onDeleteCard(card.id)
                         }}
-                        className="p-1 text-slate-600 hover:text-red-400 rounded-md opacity-0 group-hover:opacity-100 transition-all"
+                        className="p-1 text-gray-300 hover:text-red-500 rounded-md opacity-0 group-hover:opacity-100 transition-all"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -356,7 +381,7 @@ function Column({ column, cards, onRename, onDelete, onAddCard, onEditCard, onDe
       {/* Add card button */}
       <button
         onClick={onAddCard}
-        className="flex items-center justify-center gap-2 py-2.5 mt-2 text-slate-500 hover:text-slate-300 hover:bg-slate-800/40 rounded-xl text-sm transition-all border border-transparent hover:border-slate-700/40"
+        className="flex items-center justify-center gap-2 py-2.5 mt-2 text-gray-400 hover:text-gray-700 hover:bg-gray-200/60 rounded-xl text-sm transition-all"
       >
         <Plus className="w-4 h-4" />
         Add card
@@ -406,7 +431,7 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
     content: initialContent,
     editorProps: {
       attributes: {
-        class: 'tiptap prose prose-invert max-w-none focus:outline-none text-slate-200 leading-relaxed text-sm min-h-[300px]',
+        class: 'tiptap prose max-w-none focus:outline-none text-gray-800 leading-relaxed text-sm min-h-[300px]',
       },
     },
   })
@@ -454,10 +479,10 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-slate-800 border border-slate-700/60 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col">
+      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
+      <div className="relative bg-white border border-gray-200 rounded-2xl shadow-xl w-full max-w-5xl max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/40 flex-shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
           <div className="flex-1 mr-4">
             <input
               autoFocus
@@ -465,12 +490,12 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Card title"
-              className="w-full text-xl font-bold text-white bg-transparent border-none outline-none placeholder-slate-600"
+              className="w-full text-xl font-bold text-gray-900 bg-transparent border-none outline-none placeholder-gray-300"
             />
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors p-1 rounded-md hover:bg-slate-700/60"
+            className="text-gray-400 hover:text-gray-900 transition-colors p-1 rounded-md hover:bg-gray-100"
           >
             <X className="w-5 h-5" />
           </button>
@@ -479,12 +504,12 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
         {/* Two-column body */}
         <div className="flex flex-1 min-h-0 overflow-hidden">
           {/* Left: Description (rich text editor) */}
-          <div className="flex-1 flex flex-col border-r border-slate-700/40 min-w-0">
+          <div className="flex-1 flex flex-col border-r border-gray-200 min-w-0">
             {/* Editor toolbar */}
-            <div className="flex items-center gap-0.5 px-4 py-2 border-b border-slate-700/30 flex-shrink-0">
+            <div className="flex items-center gap-0.5 px-4 py-2 border-b border-gray-100 flex-shrink-0">
               {toolbarButtons.map((btn, i) =>
                 btn.divider ? (
-                  <div key={i} className="w-px h-5 bg-slate-700/50 mx-1" />
+                  <div key={i} className="w-px h-5 bg-gray-200 mx-1" />
                 ) : (
                   <button
                     key={i}
@@ -493,8 +518,8 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
                     title={btn.title}
                     className={`p-1.5 rounded-md transition-colors ${
                       btn.active
-                        ? 'bg-indigo-600/20 text-indigo-300'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                        ? 'bg-black text-white'
+                        : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100'
                     }`}
                   >
                     <btn.icon className="w-4 h-4" />
@@ -512,11 +537,11 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
           {/* Right: Attributes */}
           <div className="w-72 flex-shrink-0 overflow-y-auto p-5 space-y-5">
             <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Status</label>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Status</label>
               <select
                 value={selectedColumn}
                 onChange={(e) => setSelectedColumn(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-900/60 border border-slate-600/50 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all"
+                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400/40 transition-all"
               >
                 {columns.map((col) => (
                   <option key={col.id} value={col.id}>{col.title}</option>
@@ -525,7 +550,7 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Priority</label>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Priority</label>
               <div className="grid grid-cols-2 gap-1.5">
                 {Object.entries(PRIORITIES).map(([key, { label, color }]) => (
                   <button
@@ -534,8 +559,8 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
                     onClick={() => setPriority(key)}
                     className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${
                       priority === key
-                        ? color + ' ring-1 ring-offset-1 ring-offset-slate-800'
-                        : 'bg-slate-900/40 text-slate-400 border-slate-700/40 hover:border-slate-600/60'
+                        ? color + ' ring-1 ring-offset-1 ring-offset-white ring-gray-400'
+                        : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
                     }`}
                   >
                     <Flag className="w-3 h-3" />
@@ -546,29 +571,29 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Due Date</label>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Due Date</label>
               <input
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-900/60 border border-slate-600/50 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all"
+                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400/40 transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Labels</label>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Labels</label>
               <input
                 value={labelsText}
                 onChange={(e) => setLabelsText(e.target.value)}
                 placeholder="design, frontend, bug"
-                className="w-full px-3 py-2 bg-slate-900/60 border border-slate-600/50 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all"
+                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/40 transition-all"
               />
               {labelsText && (
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {labelsText.split(',').map((l) => l.trim()).filter(Boolean).map((label) => (
                     <span
                       key={label}
-                      className="text-xs px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-300 border border-indigo-500/20"
+                      className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 border border-gray-200"
                     >
                       {label}
                     </span>
@@ -578,12 +603,12 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
             </div>
 
             {card && (
-              <div className="pt-2 border-t border-slate-700/40">
-                <p className="text-xs text-slate-500">
+              <div className="pt-2 border-t border-gray-200">
+                <p className="text-xs text-gray-400">
                   Created {format(new Date(card.created_at), 'MMM d, yyyy')}
                 </p>
                 {card.updated_at && card.updated_at !== card.created_at && (
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs text-gray-400 mt-0.5">
                     Updated {format(new Date(card.updated_at), 'MMM d, yyyy')}
                   </p>
                 )}
@@ -593,17 +618,17 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-700/40 flex-shrink-0">
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 flex-shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors"
+            className="px-4 py-2 text-sm text-gray-500 hover:text-gray-900 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
-            className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-sm text-white font-medium transition-colors"
+            className="px-5 py-2 bg-black hover:bg-gray-800 rounded-xl text-sm text-white font-medium transition-colors"
           >
             {card ? 'Save Changes' : 'Create Card'}
           </button>

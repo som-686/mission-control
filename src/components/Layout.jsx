@@ -9,12 +9,13 @@ import {
   LogOut,
   Menu,
   X,
+  ChevronRight,
 } from 'lucide-react'
 
 const navItems = [
   { to: '/dashboard', label: 'Overview', icon: LayoutDashboard },
   { to: '/documents', label: 'Documents', icon: FileText },
-  { to: '/kanban', label: 'Kanban', icon: Columns3 },
+  { to: '/kanban', label: 'Tasks', icon: Columns3 },
 ]
 
 export default function Layout() {
@@ -32,11 +33,11 @@ export default function Layout() {
     : 'MC'
 
   return (
-    <div className="flex h-screen bg-slate-900 overflow-hidden">
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/30 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -45,20 +46,20 @@ export default function Layout() {
       <aside
         className={`
           fixed lg:static inset-y-0 left-0 z-50
-          w-64 bg-slate-950/80 backdrop-blur-xl border-r border-slate-800/60
+          w-64 bg-white border-r border-gray-200
           flex flex-col
           transform transition-transform duration-200 ease-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
         {/* Brand */}
-        <div className="flex items-center gap-3 px-5 h-16 border-b border-slate-800/60">
-          <div className="w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center">
-            <Rocket className="w-4 h-4 text-indigo-400" />
+        <div className="flex items-center gap-3 px-5 h-16 border-b border-gray-200">
+          <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center">
+            <Rocket className="w-4 h-4 text-white" />
           </div>
-          <span className="text-sm font-semibold text-white tracking-tight">Mission Control</span>
+          <span className="text-sm font-semibold text-gray-900 tracking-tight">Mission Control</span>
           <button
-            className="ml-auto lg:hidden text-slate-400 hover:text-white transition-colors"
+            className="ml-auto lg:hidden text-gray-400 hover:text-gray-900 transition-colors"
             onClick={() => setSidebarOpen(false)}
           >
             <X className="w-5 h-5" />
@@ -73,32 +74,33 @@ export default function Layout() {
               to={to}
               onClick={() => setSidebarOpen(false)}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
+                `flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
                   isActive
-                    ? 'bg-indigo-600/15 text-indigo-300 border border-indigo-500/20'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60 border border-transparent'
+                    ? 'bg-black text-white'
+                    : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
                 }`
               }
             >
               <Icon className="w-4 h-4 flex-shrink-0" />
-              {label}
+              <span className="flex-1">{label}</span>
+              {({ isActive }) => isActive && <ChevronRight className="w-4 h-4" />}
             </NavLink>
           ))}
         </nav>
 
         {/* User footer */}
-        <div className="px-3 py-4 border-t border-slate-800/60">
-          <div className="flex items-center gap-3 px-2">
-            <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-300">
+        <div className="px-3 py-4 border-t border-gray-200">
+          <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-gray-100">
+            <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs font-bold text-gray-700">
               {initials}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-slate-300 truncate">{user?.email || 'demo@mc.app'}</p>
+              <p className="text-xs text-gray-700 truncate">{user?.email || 'demo@mc.app'}</p>
             </div>
             <button
               onClick={handleLogout}
               title="Sign out"
-              className="text-slate-500 hover:text-red-400 transition-colors p-1 rounded-md hover:bg-slate-800/60"
+              className="text-gray-400 hover:text-gray-900 transition-colors p-1 rounded-md hover:bg-gray-200"
             >
               <LogOut className="w-4 h-4" />
             </button>
@@ -109,16 +111,16 @@ export default function Layout() {
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Mobile header */}
-        <header className="lg:hidden flex items-center h-14 px-4 border-b border-slate-800/60 bg-slate-900/80 backdrop-blur">
+        <header className="lg:hidden flex items-center h-14 px-4 border-b border-gray-200 bg-white">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="text-slate-400 hover:text-white transition-colors"
+            className="text-gray-500 hover:text-gray-900 transition-colors"
           >
             <Menu className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2 ml-3">
-            <Rocket className="w-4 h-4 text-indigo-400" />
-            <span className="text-sm font-semibold text-white">Mission Control</span>
+            <Rocket className="w-4 h-4 text-gray-900" />
+            <span className="text-sm font-semibold text-gray-900">Mission Control</span>
           </div>
         </header>
 
