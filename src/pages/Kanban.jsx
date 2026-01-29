@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { useKanban } from '../hooks/useKanban'
+import { useEditor, EditorContent } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
+import Placeholder from '@tiptap/extension-placeholder'
 import {
   Plus,
   MoreHorizontal,
@@ -10,6 +13,14 @@ import {
   Calendar as CalendarIcon,
   Flag,
   GripVertical,
+  Bold,
+  Italic,
+  List,
+  ListOrdered,
+  Code,
+  Quote,
+  Heading1,
+  Heading2,
 } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -354,14 +365,51 @@ function Column({ column, cards, onRename, onDelete, onAddCard, onEditCard, onDe
   )
 }
 
-// ─── Card Modal ──────────────────────────────────────
+// ─── Card Modal (Two-Column: Attributes + Rich Text Description) ─────
 
 function CardModal({ card, columnId, columns, onSave, onClose }) {
   const [title, setTitle] = useState(card?.title || '')
-  const [description, setDescription] = useState(card?.description || '')
   const [priority, setPriority] = useState(card?.priority || 'medium')
   const [dueDate, setDueDate] = useState(card?.due_date || '')
   const [labelsText, setLabelsText] = useState(card?.labels?.join(', ') || '')
+  const [selectedColumn, setSelectedColumn] = useState(columnId)
+
+  // Parse existing description — could be JSON (Tiptap) or plain string
+  const initialContent = (() => {
+    if (!card?.description) return ''
+    try {
+      const parsed = JSON.parse(card.description)
+      if (parsed && parsed.type === 'doc') return parsed
+      return card.description
+    } catch {
+      // Plain text — wrap in a paragraph
+      if (card.description.trim()) {
+        return {
+          type: 'doc',
+          content: card.description.split('\n').filter(Boolean).map(text => ({
+            type: 'paragraph',
+            content: [{ type: 'text', text }]
+          }))
+        }
+      }
+      return ''
+    }
+  })()
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Placeholder.configure({
+        placeholder: 'Add a detailed description… Type / for commands',
+      }),
+    ],
+    content: initialContent,
+    editorProps: {
+      attributes: {
+        class: 'tiptap prose prose-invert max-w-none focus:outline-none text-slate-200 leading-relaxed text-sm min-h-[300px]',
+      },
+    },
+  })
 
   function handleSubmit(e) {
     e.preventDefault()
@@ -372,24 +420,54 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
       .map((l) => l.trim())
       .filter(Boolean)
 
-    onSave({
+    // Store description as Tiptap JSON
+    const descriptionJson = editor ? JSON.stringify(editor.getJSON()) : ''
+
+    const data = {
       title: title.trim(),
-      description: description.trim(),
+      description: descriptionJson,
       priority,
       due_date: dueDate || null,
       labels,
-    })
+    }
+
+    // If column changed on edit, include column_id
+    if (card && selectedColumn !== card.column_id) {
+      data.column_id = selectedColumn
+    }
+
+    onSave(data)
   }
 
+  const toolbarButtons = [
+    { icon: Bold, action: () => editor?.chain().focus().toggleBold().run(), active: editor?.isActive('bold'), title: 'Bold' },
+    { icon: Italic, action: () => editor?.chain().focus().toggleItalic().run(), active: editor?.isActive('italic'), title: 'Italic' },
+    { icon: Code, action: () => editor?.chain().focus().toggleCode().run(), active: editor?.isActive('code'), title: 'Code' },
+    { divider: true },
+    { icon: Heading1, action: () => editor?.chain().focus().toggleHeading({ level: 1 }).run(), active: editor?.isActive('heading', { level: 1 }), title: 'Heading 1' },
+    { icon: Heading2, action: () => editor?.chain().focus().toggleHeading({ level: 2 }).run(), active: editor?.isActive('heading', { level: 2 }), title: 'Heading 2' },
+    { divider: true },
+    { icon: List, action: () => editor?.chain().focus().toggleBulletList().run(), active: editor?.isActive('bulletList'), title: 'Bullet List' },
+    { icon: ListOrdered, action: () => editor?.chain().focus().toggleOrderedList().run(), active: editor?.isActive('orderedList'), title: 'Numbered List' },
+    { icon: Quote, action: () => editor?.chain().focus().toggleBlockquote().run(), active: editor?.isActive('blockquote'), title: 'Quote' },
+  ]
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-slate-800 border border-slate-700/60 rounded-2xl shadow-2xl w-full max-w-md">
+      <div className="relative bg-slate-800 border border-slate-700/60 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/40">
-          <h2 className="text-lg font-semibold text-white">
-            {card ? 'Edit Card' : 'New Card'}
-          </h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/40 flex-shrink-0">
+          <div className="flex-1 mr-4">
+            <input
+              autoFocus
+              required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Card title"
+              className="w-full text-xl font-bold text-white bg-transparent border-none outline-none placeholder-slate-600"
+            />
+          </div>
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-white transition-colors p-1 rounded-md hover:bg-slate-700/60"
@@ -398,85 +476,138 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Title</label>
-            <input
-              autoFocus
-              required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Card title"
-              className="w-full px-3.5 py-2.5 bg-slate-900/60 border border-slate-600/50 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all"
-            />
+        {/* Two-column body */}
+        <div className="flex flex-1 min-h-0 overflow-hidden">
+          {/* Left: Description (rich text editor) */}
+          <div className="flex-1 flex flex-col border-r border-slate-700/40 min-w-0">
+            {/* Editor toolbar */}
+            <div className="flex items-center gap-0.5 px-4 py-2 border-b border-slate-700/30 flex-shrink-0">
+              {toolbarButtons.map((btn, i) =>
+                btn.divider ? (
+                  <div key={i} className="w-px h-5 bg-slate-700/50 mx-1" />
+                ) : (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={btn.action}
+                    title={btn.title}
+                    className={`p-1.5 rounded-md transition-colors ${
+                      btn.active
+                        ? 'bg-indigo-600/20 text-indigo-300'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                    }`}
+                  >
+                    <btn.icon className="w-4 h-4" />
+                  </button>
+                )
+              )}
+            </div>
+
+            {/* Editor content */}
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              <EditorContent editor={editor} />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Description</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Add details…"
-              rows={3}
-              className="w-full px-3.5 py-2.5 bg-slate-900/60 border border-slate-600/50 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all resize-none"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+          {/* Right: Attributes */}
+          <div className="w-72 flex-shrink-0 overflow-y-auto p-5 space-y-5">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Priority</label>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Status</label>
               <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-900/60 border border-slate-600/50 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all"
+                value={selectedColumn}
+                onChange={(e) => setSelectedColumn(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-900/60 border border-slate-600/50 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all"
               >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent</option>
+                {columns.map((col) => (
+                  <option key={col.id} value={col.id}>{col.title}</option>
+                ))}
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Due Date</label>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Priority</label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {Object.entries(PRIORITIES).map(([key, { label, color }]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setPriority(key)}
+                    className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                      priority === key
+                        ? color + ' ring-1 ring-offset-1 ring-offset-slate-800'
+                        : 'bg-slate-900/40 text-slate-400 border-slate-700/40 hover:border-slate-600/60'
+                    }`}
+                  >
+                    <Flag className="w-3 h-3" />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Due Date</label>
               <input
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-900/60 border border-slate-600/50 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all"
+                className="w-full px-3 py-2 bg-slate-900/60 border border-slate-600/50 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all"
               />
             </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
-              Labels <span className="text-slate-500 font-normal">(comma-separated)</span>
-            </label>
-            <input
-              value={labelsText}
-              onChange={(e) => setLabelsText(e.target.value)}
-              placeholder="design, frontend, bug"
-              className="w-full px-3.5 py-2.5 bg-slate-900/60 border border-slate-600/50 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all"
-            />
-          </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Labels</label>
+              <input
+                value={labelsText}
+                onChange={(e) => setLabelsText(e.target.value)}
+                placeholder="design, frontend, bug"
+                className="w-full px-3 py-2 bg-slate-900/60 border border-slate-600/50 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all"
+              />
+              {labelsText && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {labelsText.split(',').map((l) => l.trim()).filter(Boolean).map((label) => (
+                    <span
+                      key={label}
+                      className="text-xs px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-300 border border-indigo-500/20"
+                    >
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
 
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2.5 text-sm text-slate-400 hover:text-white transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-sm text-white font-medium transition-colors"
-            >
-              {card ? 'Save Changes' : 'Create Card'}
-            </button>
+            {card && (
+              <div className="pt-2 border-t border-slate-700/40">
+                <p className="text-xs text-slate-500">
+                  Created {format(new Date(card.created_at), 'MMM d, yyyy')}
+                </p>
+                {card.updated_at && card.updated_at !== card.created_at && (
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Updated {format(new Date(card.updated_at), 'MMM d, yyyy')}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
-        </form>
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-700/40 flex-shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-sm text-white font-medium transition-colors"
+          >
+            {card ? 'Save Changes' : 'Create Card'}
+          </button>
+        </div>
       </div>
     </div>
   )
