@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard'
 import Documents from './pages/Documents'
 import DocumentEditor from './pages/DocumentEditor'
 import Kanban from './pages/Kanban'
+import GoogleCallback from './pages/GoogleCallback'
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/auth/google/callback" element={<GoogleCallback />} />
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
               <Route path="/dashboard" element={<Dashboard />} />
