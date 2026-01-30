@@ -12,7 +12,6 @@ import {
   X,
   Calendar as CalendarIcon,
   Flag,
-  GripVertical,
   Bold,
   Italic,
   List,
@@ -312,18 +311,13 @@ function Column({ column, cards, onRename, onDelete, onAddCard, onEditCard, onDe
                   <div
                     ref={provided.innerRef}
                     {...provided.draggableProps}
-                    className={`group bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 rounded-xl p-3.5 cursor-pointer transition-all shadow-sm ${
+                    {...provided.dragHandleProps}
+                    className={`group bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 rounded-xl p-3.5 cursor-grab active:cursor-grabbing transition-all shadow-sm ${
                       snapshot.isDragging ? 'shadow-lg rotate-2' : ''
                     }`}
                     onClick={() => onEditCard(card)}
                   >
                     <div className="flex items-start gap-2">
-                      <div
-                        {...provided.dragHandleProps}
-                        className="mt-0.5 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <GripVertical className="w-3.5 h-3.5" />
-                      </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-800 line-clamp-2">
                           {card.title}
