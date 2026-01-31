@@ -66,16 +66,7 @@ export async function notifyMentions({
   // Don't notify yourself
   const recipients = mentioned.filter((id) => id !== sender)
 
-  // Check which mentions are new
-  const type = cardId ? 'card' : 'doc'
-  const entityId = cardId || documentId
-  const previouslyNotified = getPreviouslyNotified(type, entityId)
-  const newRecipients = recipients.filter((id) => !previouslyNotified.includes(id))
-
-  // Save all current mentions as notified
-  savePreviouslyNotified(type, entityId, recipients)
-
-  if (newRecipients.length === 0) return
+  if (recipients.length === 0) return
 
   const context = cardTitle
     ? `card "${cardTitle}"`
@@ -83,7 +74,7 @@ export async function notifyMentions({
     ? `document "${docTitle}"`
     : 'a document'
 
-  const notifications = newRecipients.map((recipient) => ({
+  const notifications = recipients.map((recipient) => ({
     recipient,
     sender,
     type: cardId ? 'card_mention' : 'doc_mention',
