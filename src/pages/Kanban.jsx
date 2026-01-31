@@ -30,6 +30,10 @@ import {
   User,
   MessageSquare,
   Send,
+  SlidersHorizontal,
+  Tag,
+  ArrowLeft,
+  ChevronRight,
 } from 'lucide-react'
 import { format, formatDistanceToNow } from 'date-fns'
 
@@ -601,254 +605,393 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
     { icon: Quote, action: () => editor?.chain().focus().toggleBlockquote().run(), active: editor?.isActive('blockquote'), title: 'Quote' },
   ]
 
+  const [attrOpen, setAttrOpen] = useState(false)
+
+  // ── Shared sub-components ──────────────────────────────────────────
+
+  const attributesContent = (
+    <div className="space-y-5">
+      <div>
+        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Status</label>
+        <select
+          value={selectedColumn}
+          onChange={(e) => setSelectedColumn(e.target.value)}
+          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400/40 transition-all"
+        >
+          {columns.map((col) => (
+            <option key={col.id} value={col.id}>{col.title}</option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Assignee</label>
+        <select
+          value={assignedTo}
+          onChange={(e) => setAssignedTo(e.target.value)}
+          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400/40 transition-all"
+        >
+          <option value="">Unassigned</option>
+          {Object.entries(ASSIGNEES).map(([key, { label, avatar }]) => (
+            <option key={key} value={key}>{avatar} {label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Priority</label>
+        <div className="grid grid-cols-2 gap-1.5">
+          {Object.entries(PRIORITIES).map(([key, { label, color }]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setPriority(key)}
+              className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                priority === key
+                  ? color + ' ring-1 ring-offset-1 ring-offset-white ring-gray-400'
+                  : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <Flag className="w-3 h-3" />
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Due Date</label>
+        <input
+          type="date"
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
+          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400/40 transition-all"
+        />
+      </div>
+
+      <div>
+        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Tags</label>
+        <TagInput
+          tags={tags}
+          onChange={setTags}
+          placeholder="#design #frontend #bug"
+          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg min-h-[38px]"
+        />
+      </div>
+
+      {card && (
+        <div className="pt-2 border-t border-gray-200">
+          <p className="text-xs text-gray-400">
+            Created {format(new Date(card.created_at), 'MMM d, yyyy')}
+          </p>
+          {card.updated_at && card.updated_at !== card.created_at && (
+            <p className="text-xs text-gray-400 mt-0.5">
+              Updated {format(new Date(card.updated_at), 'MMM d, yyyy')}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+
+  const editorToolbar = (
+    <div className="flex items-center gap-0.5 px-4 py-2 border-b border-gray-100 flex-shrink-0 overflow-x-auto">
+      {toolbarButtons.map((btn, i) =>
+        btn.divider ? (
+          <div key={i} className="w-px h-5 bg-gray-200 mx-1 flex-shrink-0" />
+        ) : (
+          <button
+            key={i}
+            type="button"
+            onClick={btn.action}
+            title={btn.title}
+            className={`p-1.5 rounded-md transition-colors flex-shrink-0 ${
+              btn.active
+                ? 'bg-black text-white'
+                : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <btn.icon className="w-4 h-4" />
+          </button>
+        )
+      )}
+    </div>
+  )
+
+  const commentsSection = card ? (
+    <div className="mt-6 pt-6 border-t border-gray-200">
+      <div className="flex items-center gap-2 mb-4">
+        <MessageSquare className="w-4 h-4 text-gray-400" />
+        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          Comments {comments.length > 0 && `(${comments.length})`}
+        </h3>
+      </div>
+
+      <div className="space-y-3 mb-4">
+        {commentsLoading && (
+          <p className="text-sm text-gray-400">Loading comments…</p>
+        )}
+        {!commentsLoading && comments.length === 0 && (
+          <p className="text-sm text-gray-400">No comments yet</p>
+        )}
+        {comments.map((comment) => {
+          const isOwn = comment.user_id === user?.id
+          const assignee = ASSIGNEES[comment.author]
+          return (
+            <div key={comment.id} className="group flex gap-3">
+              <div className={`flex-shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold mt-0.5 ${assignee?.color || 'bg-gray-100 text-gray-500'}`}>
+                {assignee?.avatar || comment.author?.[0]?.toUpperCase() || '?'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-sm font-medium text-gray-900">
+                    {assignee?.label || comment.author}
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                  </span>
+                  {isOwn && (
+                    <button
+                      type="button"
+                      onClick={() => deleteComment(comment.id)}
+                      className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+                <p className="text-sm text-gray-700 mt-0.5 whitespace-pre-wrap">{comment.content}</p>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="flex gap-2">
+        <div className={`flex-shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold mt-1 ${ASSIGNEES[authorName]?.color || 'bg-gray-100 text-gray-500'}`}>
+          {ASSIGNEES[authorName]?.avatar || authorName[0]?.toUpperCase() || '?'}
+        </div>
+        <div className="flex-1 flex gap-2">
+          <input
+            type="text"
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey && commentText.trim()) {
+                e.preventDefault()
+                addComment(commentText, authorName)
+                setCommentText('')
+              }
+            }}
+            placeholder="Add a comment…"
+            className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/40 transition-all"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              if (commentText.trim()) {
+                addComment(commentText, authorName)
+                setCommentText('')
+              }
+            }}
+            disabled={!commentText.trim()}
+            className="p-2 text-gray-400 hover:text-gray-900 disabled:opacity-30 transition-colors"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null
+
+  const footerButtons = (
+    <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 flex-shrink-0">
+      <button
+        type="button"
+        onClick={onClose}
+        className="px-4 py-2 text-sm text-gray-500 hover:text-gray-900 transition-colors"
+      >
+        Cancel
+      </button>
+      <button
+        onClick={handleSubmit}
+        className="px-5 py-2 bg-black hover:bg-gray-800 rounded-xl text-sm text-white font-medium transition-colors"
+      >
+        {card ? 'Save Changes' : 'Create Card'}
+      </button>
+    </div>
+  )
+
+  // ── Render ─────────────────────────────────────────────────────────
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8">
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative bg-white border border-gray-200 rounded-2xl shadow-xl w-full max-w-5xl max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
-          <div className="flex-1 mr-4">
-            <input
-              autoFocus
-              required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Card title"
-              className="w-full text-xl font-bold text-gray-900 bg-transparent border-none outline-none placeholder-gray-300"
-            />
+    <>
+      {/* ── DESKTOP: centered modal with two columns ── */}
+      <div className="fixed inset-0 z-50 hidden md:flex items-center justify-center px-4 py-8">
+        <div className="absolute inset-0 bg-black/30" onClick={onClose} />
+        <div className="relative bg-white border border-gray-200 rounded-2xl shadow-xl w-full max-w-5xl max-h-[90vh] flex flex-col">
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+            <div className="flex-1 mr-4">
+              <input
+                autoFocus
+                required
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Card title"
+                className="w-full text-xl font-bold text-gray-900 bg-transparent border-none outline-none placeholder-gray-300"
+              />
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-900 transition-colors p-1 rounded-md hover:bg-gray-100"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
+
+          {/* Two-column body */}
+          <div className="flex flex-1 min-h-0 overflow-hidden">
+            {/* Left: Description */}
+            <div className="flex-1 flex flex-col border-r border-gray-200 min-w-0">
+              {editorToolbar}
+              <div className="flex-1 overflow-y-auto px-6 py-4">
+                <EditorContent editor={editor} />
+                {commentsSection}
+              </div>
+            </div>
+
+            {/* Right: Attributes */}
+            <div className="w-72 flex-shrink-0 overflow-y-auto p-5">
+              {attributesContent}
+            </div>
+          </div>
+
+          {footerButtons}
+        </div>
+      </div>
+
+      {/* ── MOBILE / TABLET: fullscreen with slide-out attribute panel ── */}
+      <div className="fixed inset-0 z-50 flex flex-col md:hidden bg-white">
+        {/* Header */}
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 flex-shrink-0">
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-900 transition-colors p-1 rounded-md hover:bg-gray-100"
+            className="text-gray-400 hover:text-gray-900 transition-colors p-1.5 -ml-1.5 rounded-lg hover:bg-gray-100"
           >
-            <X className="w-5 h-5" />
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <input
+            autoFocus
+            required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Card title"
+            className="flex-1 text-lg font-bold text-gray-900 bg-transparent border-none outline-none placeholder-gray-300"
+          />
+          <button
+            onClick={() => setAttrOpen(true)}
+            className="relative text-gray-400 hover:text-gray-900 transition-colors p-1.5 rounded-lg hover:bg-gray-100"
+            title="Card attributes"
+          >
+            <SlidersHorizontal className="w-5 h-5" />
+            {/* Dot indicator when attributes have values */}
+            {(assignedTo || dueDate || tags.length > 0) && (
+              <span className="absolute top-1 right-1 w-2 h-2 bg-black rounded-full" />
+            )}
           </button>
         </div>
 
-        {/* Two-column body */}
-        <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* Left: Description (rich text editor) */}
-          <div className="flex-1 flex flex-col border-r border-gray-200 min-w-0">
-            {/* Editor toolbar */}
-            <div className="flex items-center gap-0.5 px-4 py-2 border-b border-gray-100 flex-shrink-0">
-              {toolbarButtons.map((btn, i) =>
-                btn.divider ? (
-                  <div key={i} className="w-px h-5 bg-gray-200 mx-1" />
-                ) : (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={btn.action}
-                    title={btn.title}
-                    className={`p-1.5 rounded-md transition-colors ${
-                      btn.active
-                        ? 'bg-black text-white'
-                        : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100'
-                    }`}
-                  >
-                    <btn.icon className="w-4 h-4" />
-                  </button>
-                )
-              )}
-            </div>
+        {/* Quick attribute chips — compact summary row */}
+        <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-100 overflow-x-auto flex-shrink-0">
+          <button
+            onClick={() => setAttrOpen(true)}
+            className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg border transition-all ${
+              priority !== 'medium'
+                ? PRIORITIES[priority]?.color
+                : 'bg-white text-gray-400 border-gray-200'
+            }`}
+          >
+            <Flag className="w-3 h-3" />
+            {PRIORITIES[priority]?.label || 'Medium'}
+          </button>
+          {assignedTo && (
+            <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-600 border border-gray-200">
+              <User className="w-3 h-3" />
+              {ASSIGNEES[assignedTo]?.avatar} {ASSIGNEES[assignedTo]?.label || assignedTo}
+            </span>
+          )}
+          {dueDate && (
+            <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-600 border border-gray-200">
+              <CalendarIcon className="w-3 h-3" />
+              {format(new Date(dueDate), 'MMM d')}
+            </span>
+          )}
+          {tags.slice(0, 2).map((tag) => (
+            <span key={tag} className="inline-flex items-center gap-0.5 text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-600 border border-gray-200">
+              <Tag className="w-3 h-3" />
+              {tag}
+            </span>
+          ))}
+          {tags.length > 2 && (
+            <span className="text-xs text-gray-400">+{tags.length - 2}</span>
+          )}
+        </div>
 
-            {/* Editor content */}
-            <div className="flex-1 overflow-y-auto px-6 py-4">
-              <EditorContent editor={editor} />
+        {/* Toolbar */}
+        {editorToolbar}
 
-              {/* Comments section (only for existing cards) */}
-              {card && (
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <div className="flex items-center gap-2 mb-4">
-                    <MessageSquare className="w-4 h-4 text-gray-400" />
-                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Comments {comments.length > 0 && `(${comments.length})`}
-                    </h3>
-                  </div>
-
-                  {/* Comment list */}
-                  <div className="space-y-3 mb-4">
-                    {commentsLoading && (
-                      <p className="text-sm text-gray-400">Loading comments…</p>
-                    )}
-                    {!commentsLoading && comments.length === 0 && (
-                      <p className="text-sm text-gray-400">No comments yet</p>
-                    )}
-                    {comments.map((comment) => {
-                      const isOwn = comment.user_id === user?.id
-                      const assignee = ASSIGNEES[comment.author]
-                      return (
-                        <div key={comment.id} className="group flex gap-3">
-                          <div className={`flex-shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold mt-0.5 ${assignee?.color || 'bg-gray-100 text-gray-500'}`}>
-                            {assignee?.avatar || comment.author?.[0]?.toUpperCase() || '?'}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-baseline gap-2">
-                              <span className="text-sm font-medium text-gray-900">
-                                {assignee?.label || comment.author}
-                              </span>
-                              <span className="text-xs text-gray-400">
-                                {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
-                              </span>
-                              {isOwn && (
-                                <button
-                                  type="button"
-                                  onClick={() => deleteComment(comment.id)}
-                                  className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
-                              )}
-                            </div>
-                            <p className="text-sm text-gray-700 mt-0.5 whitespace-pre-wrap">{comment.content}</p>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-
-                  {/* Add comment */}
-                  <div className="flex gap-2">
-                    <div className={`flex-shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold mt-1 ${ASSIGNEES[authorName]?.color || 'bg-gray-100 text-gray-500'}`}>
-                      {ASSIGNEES[authorName]?.avatar || authorName[0]?.toUpperCase() || '?'}
-                    </div>
-                    <div className="flex-1 flex gap-2">
-                      <input
-                        type="text"
-                        value={commentText}
-                        onChange={(e) => setCommentText(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey && commentText.trim()) {
-                            e.preventDefault()
-                            addComment(commentText, authorName)
-                            setCommentText('')
-                          }
-                        }}
-                        placeholder="Add a comment…"
-                        className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/40 transition-all"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (commentText.trim()) {
-                            addComment(commentText, authorName)
-                            setCommentText('')
-                          }
-                        }}
-                        disabled={!commentText.trim()}
-                        className="p-2 text-gray-400 hover:text-gray-900 disabled:opacity-30 transition-colors"
-                      >
-                        <Send className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Right: Attributes */}
-          <div className="w-72 flex-shrink-0 overflow-y-auto p-5 space-y-5">
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Status</label>
-              <select
-                value={selectedColumn}
-                onChange={(e) => setSelectedColumn(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400/40 transition-all"
-              >
-                {columns.map((col) => (
-                  <option key={col.id} value={col.id}>{col.title}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Assignee</label>
-              <select
-                value={assignedTo}
-                onChange={(e) => setAssignedTo(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400/40 transition-all"
-              >
-                <option value="">Unassigned</option>
-                {Object.entries(ASSIGNEES).map(([key, { label, avatar }]) => (
-                  <option key={key} value={key}>{avatar} {label}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Priority</label>
-              <div className="grid grid-cols-2 gap-1.5">
-                {Object.entries(PRIORITIES).map(([key, { label, color }]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setPriority(key)}
-                    className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                      priority === key
-                        ? color + ' ring-1 ring-offset-1 ring-offset-white ring-gray-400'
-                        : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <Flag className="w-3 h-3" />
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Due Date</label>
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400/40 transition-all"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Tags</label>
-              <TagInput
-                tags={tags}
-                onChange={setTags}
-                placeholder="#design #frontend #bug"
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg min-h-[38px]"
-              />
-            </div>
-
-            {card && (
-              <div className="pt-2 border-t border-gray-200">
-                <p className="text-xs text-gray-400">
-                  Created {format(new Date(card.created_at), 'MMM d, yyyy')}
-                </p>
-                {card.updated_at && card.updated_at !== card.created_at && (
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    Updated {format(new Date(card.updated_at), 'MMM d, yyyy')}
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
+        {/* Editor content */}
+        <div className="flex-1 overflow-y-auto px-4 py-4">
+          <EditorContent editor={editor} />
+          {commentsSection}
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 flex-shrink-0">
+        <div className="flex gap-3 px-4 py-3 border-t border-gray-200 flex-shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-500 hover:text-gray-900 transition-colors"
+            className="flex-1 px-4 py-2.5 text-sm text-gray-500 hover:text-gray-900 transition-colors border border-gray-200 rounded-xl"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
-            className="px-5 py-2 bg-black hover:bg-gray-800 rounded-xl text-sm text-white font-medium transition-colors"
+            className="flex-1 px-5 py-2.5 bg-black hover:bg-gray-800 rounded-xl text-sm text-white font-medium transition-colors"
           >
-            {card ? 'Save Changes' : 'Create Card'}
+            {card ? 'Save' : 'Create'}
           </button>
         </div>
+
+        {/* ── Sliding Attributes Panel ── */}
+        {/* Backdrop */}
+        <div
+          className={`fixed inset-0 bg-black/20 transition-opacity duration-300 ${
+            attrOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
+          onClick={() => setAttrOpen(false)}
+        />
+        {/* Panel */}
+        <div
+          className={`fixed top-0 right-0 bottom-0 w-[85vw] max-w-sm bg-white shadow-2xl transform transition-transform duration-300 ease-out ${
+            attrOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}
+        >
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+            <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Attributes</h2>
+            <button
+              onClick={() => setAttrOpen(false)}
+              className="text-gray-400 hover:text-gray-900 transition-colors p-1 rounded-md hover:bg-gray-100"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="overflow-y-auto p-5 h-[calc(100%-57px)]">
+            {attributesContent}
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   )
 }
