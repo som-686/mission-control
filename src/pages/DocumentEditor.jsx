@@ -7,7 +7,7 @@ import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Mention from '@tiptap/extension-mention'
 import { mentionSuggestion } from '../lib/mention'
-import { notifyMentions, extractMentions } from '../hooks/useNotifications'
+import { notifyMentions, seedMentionTracker } from '../hooks/useNotifications'
 import { useAuth } from '../contexts/AuthContext'
 import {
   ArrowLeft,
@@ -223,9 +223,7 @@ export default function DocumentEditor() {
           }
           // Seed mention tracker so existing mentions don't re-notify
           if (data.content) {
-            const existing = extractMentions(data.content)
-            const key = `notified_mentions_doc_${data.id}`
-            try { sessionStorage.setItem(key, JSON.stringify(existing)) } catch {}
+            seedMentionTracker('doc', data.id, data.content)
           }
         }
         setLoaded(true)

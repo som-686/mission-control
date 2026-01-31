@@ -27,11 +27,12 @@ export function extractMentions(content) {
 }
 
 // Track which mentions have already been notified (per doc/card)
+// Uses localStorage so it persists across refreshes
 const _notifiedKey = (type, id) => `notified_mentions_${type}_${id}`
 
 function getPreviouslyNotified(type, id) {
   try {
-    const raw = sessionStorage.getItem(_notifiedKey(type, id))
+    const raw = localStorage.getItem(_notifiedKey(type, id))
     return raw ? JSON.parse(raw) : []
   } catch {
     return []
@@ -40,8 +41,14 @@ function getPreviouslyNotified(type, id) {
 
 function savePreviouslyNotified(type, id, mentions) {
   try {
-    sessionStorage.setItem(_notifiedKey(type, id), JSON.stringify(mentions))
+    localStorage.setItem(_notifiedKey(type, id), JSON.stringify(mentions))
   } catch { /* ignore */ }
+}
+
+// Seed tracker with existing mentions (call on doc/card load)
+export function seedMentionTracker(type, entityId, content) {
+  const mentions = extractMentions(content)
+  savePreviouslyNotified(type, entityId, mentions)
 }
 
 // Create notifications for mentioned users — only for NEW mentions
