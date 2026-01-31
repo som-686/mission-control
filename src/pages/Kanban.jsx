@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { useKanban } from '../hooks/useKanban'
+import { useComments } from '../hooks/useComments'
+import { useAuth } from '../contexts/AuthContext'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -21,8 +23,10 @@ import {
   Heading1,
   Heading2,
   User,
+  MessageSquare,
+  Send,
 } from 'lucide-react'
-import { format } from 'date-fns'
+import { format, formatDistanceToNow } from 'date-fns'
 
 // Extract plain text from Tiptap JSON or plain string
 function extractPlainText(description) {
@@ -403,12 +407,25 @@ function Column({ column, cards, onRename, onDelete, onAddCard, onEditCard, onDe
 // ─── Card Modal (Two-Column: Attributes + Rich Text Description) ─────
 
 function CardModal({ card, columnId, columns, onSave, onClose }) {
+  const { user } = useAuth()
   const [title, setTitle] = useState(card?.title || '')
   const [priority, setPriority] = useState(card?.priority || 'medium')
   const [dueDate, setDueDate] = useState(card?.due_date || '')
   const [labelsText, setLabelsText] = useState(card?.labels?.join(', ') || '')
   const [selectedColumn, setSelectedColumn] = useState(columnId)
   const [assignedTo, setAssignedTo] = useState(card?.assigned_to || '')
+  const [commentText, setCommentText] = useState('')
+
+  // Comments (only for existing cards)
+  const { comments, loading: commentsLoading, addComment, deleteComment } = useComments(card?.id)
+
+  // Determine current user's author name from email
+  const authorName = (() => {
+    const email = user?.email || ''
+    if (email.includes('paglabhoot')) return 'bhoot'
+    if (email.includes('somnath') || email.includes('som')) return 'som'
+    return email.split('@')[0] || 'unknown'
+  })()
 
   // Parse existing description — could be JSON (Tiptap) or plain string
   const initialContent = (() => {
@@ -543,6 +560,95 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
             {/* Editor content */}
             <div className="flex-1 overflow-y-auto px-6 py-4">
               <EditorContent editor={editor} />
+
+              {/* Comments section (only for existing cards) */}
+              {card && (
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <div className="flex items-center gap-2 mb-4">
+                    <MessageSquare className="w-4 h-4 text-gray-400" />
+                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Comments {comments.length > 0 && `(${comments.length})`}
+                    </h3>
+                  </div>
+
+                  {/* Comment list */}
+                  <div className="space-y-3 mb-4">
+                    {commentsLoading && (
+                      <p className="text-sm text-gray-400">Loading comments…</p>
+                    )}
+                    {!commentsLoading && comments.length === 0 && (
+                      <p className="text-sm text-gray-400">No comments yet</p>
+                    )}
+                    {comments.map((comment) => {
+                      const isOwn = comment.user_id === user?.id
+                      const assignee = ASSIGNEES[comment.author]
+                      return (
+                        <div key={comment.id} className="group flex gap-3">
+                          <div className={`flex-shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold mt-0.5 ${assignee?.color || 'bg-gray-100 text-gray-500'}`}>
+                            {assignee?.avatar || comment.author?.[0]?.toUpperCase() || '?'}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-sm font-medium text-gray-900">
+                                {assignee?.label || comment.author}
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                              </span>
+                              {isOwn && (
+                                <button
+                                  type="button"
+                                  onClick={() => deleteComment(comment.id)}
+                                  className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-700 mt-0.5 whitespace-pre-wrap">{comment.content}</p>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Add comment */}
+                  <div className="flex gap-2">
+                    <div className={`flex-shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold mt-1 ${ASSIGNEES[authorName]?.color || 'bg-gray-100 text-gray-500'}`}>
+                      {ASSIGNEES[authorName]?.avatar || authorName[0]?.toUpperCase() || '?'}
+                    </div>
+                    <div className="flex-1 flex gap-2">
+                      <input
+                        type="text"
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey && commentText.trim()) {
+                            e.preventDefault()
+                            addComment(commentText, authorName)
+                            setCommentText('')
+                          }
+                        }}
+                        placeholder="Add a comment…"
+                        className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/40 transition-all"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (commentText.trim()) {
+                            addComment(commentText, authorName)
+                            setCommentText('')
+                          }
+                        }}
+                        disabled={!commentText.trim()}
+                        className="p-2 text-gray-400 hover:text-gray-900 disabled:opacity-30 transition-colors"
+                      >
+                        <Send className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
