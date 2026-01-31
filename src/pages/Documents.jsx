@@ -124,9 +124,9 @@ export default function Documents() {
             <div
               key={doc.id}
               onClick={() => navigate(`/documents/${doc.id}`)}
-              className="group flex items-center gap-4 px-5 py-4 bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 rounded-xl cursor-pointer transition-all duration-150 shadow-sm"
+              className="group flex items-start gap-3 sm:gap-4 px-4 sm:px-5 py-3.5 sm:py-4 bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 rounded-xl cursor-pointer transition-all duration-150 shadow-sm"
             >
-              <div className="w-9 h-9 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center flex-shrink-0">
+              <div className="w-9 h-9 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center flex-shrink-0 mt-0.5">
                 <FileText className="w-4 h-4 text-gray-400" />
               </div>
 
@@ -134,25 +134,27 @@ export default function Documents() {
                 <p className="text-sm font-medium text-gray-800 truncate group-hover:text-gray-900 transition-colors">
                   {doc.title || 'Untitled'}
                 </p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <Clock className="w-3 h-3 text-gray-400" />
-                  <span className="text-xs text-gray-400">
+                <div className="flex items-center gap-1.5 mt-1">
+                  <Clock className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                  <span className="text-xs text-gray-400 whitespace-nowrap">
                     {format(new Date(doc.updated_at || doc.created_at), 'MMM d, yyyy · h:mm a')}
                   </span>
-                  {doc.tags && doc.tags.length > 0 && (
-                    <>
-                      <span className="text-gray-300">·</span>
-                      {doc.tags.slice(0, 3).map((tag) => (
-                        <span key={tag} className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">
-                          #{tag}
-                        </span>
-                      ))}
-                    </>
-                  )}
                 </div>
+                {doc.tags && doc.tags.length > 0 && (
+                  <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                    {doc.tags.slice(0, 3).map((tag) => (
+                      <span key={tag} className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 border border-gray-100">
+                        #{tag}
+                      </span>
+                    ))}
+                    {doc.tags.length > 3 && (
+                      <span className="text-xs text-gray-400">+{doc.tags.length - 3}</span>
+                    )}
+                  </div>
+                )}
               </div>
 
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex-shrink-0">
                 <button
                   onClick={(e) => handleFavorite(e, doc)}
                   className={`p-1.5 rounded-lg transition-colors ${
