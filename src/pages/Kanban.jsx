@@ -561,16 +561,22 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
           const updated = payload.new
           const ed = editorRef.current
           if (ed && updated.description) {
+            // Don't overwrite if user is actively editing — their changes take priority
+            if (ed.isFocused) return
             try {
               const content = JSON.parse(updated.description)
               if (content && content.type === 'doc') {
-                // Save cursor position, update content, restore cursor
-                const currentPos = ed.state.selection.from
-                ed.commands.setContent(content)
-                try {
-                  const maxPos = ed.state.doc.content.size
-                  ed.commands.setTextSelection(Math.min(currentPos, maxPos))
-                } catch { /* ignore */ }
+                // Only update if content actually differs
+                const currentJson = JSON.stringify(ed.getJSON())
+                const newJson = JSON.stringify(content)
+                if (currentJson !== newJson) {
+                  const currentPos = ed.state.selection.from
+                  ed.commands.setContent(content)
+                  try {
+                    const maxPos = ed.state.doc.content.size
+                    ed.commands.setTextSelection(Math.min(currentPos, maxPos))
+                  } catch { /* ignore */ }
+                }
               }
             } catch {
               // not JSON, skip
