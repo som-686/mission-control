@@ -448,8 +448,20 @@ function Column({ column, cards, onRename, onDelete, onAddCard, onEditCard, onDe
 
 // ─── Card Modal (Two-Column: Attributes + Rich Text Description) ─────
 
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < breakpoint)
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${breakpoint - 1}px)`)
+    const handler = (e) => setIsMobile(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [breakpoint])
+  return isMobile
+}
+
 function CardModal({ card, columnId, columns, onSave, onClose }) {
   const { user } = useAuth()
+  const isMobile = useIsMobile()
   const [title, setTitle] = useState(card?.title || '')
   const [priority, setPriority] = useState(card?.priority || 'medium')
   const [dueDate, setDueDate] = useState(card?.due_date || '')
@@ -824,10 +836,10 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
 
   // ── Render ─────────────────────────────────────────────────────────
 
-  return (
-    <>
-      {/* ── DESKTOP: centered modal with two columns ── */}
-      <div className="fixed inset-0 z-50 hidden md:flex items-center justify-center px-4 py-8">
+  if (!isMobile) {
+    // ── DESKTOP: centered modal with two columns ──
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8">
         <div className="absolute inset-0 bg-black/30" onClick={onClose} />
         <div className="relative bg-white border border-gray-200 rounded-2xl shadow-xl w-full max-w-5xl max-h-[90vh] flex flex-col">
           {/* Header */}
@@ -870,9 +882,12 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
           {footerButtons}
         </div>
       </div>
+    )
+  }
 
-      {/* ── MOBILE / TABLET: fullscreen with slide-out attribute panel ── */}
-      <div className="fixed inset-0 z-50 flex flex-col md:hidden bg-white">
+  // ── MOBILE / TABLET: fullscreen with slide-out attribute panel ──
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-white">
         {/* Header */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 flex-shrink-0">
           <button
@@ -991,7 +1006,6 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
             {attributesContent}
           </div>
         </div>
-      </div>
-    </>
+    </div>
   )
 }
