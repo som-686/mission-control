@@ -20,6 +20,7 @@ import {
   Quote,
   Heading1,
   Heading2,
+  User,
 } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -53,6 +54,11 @@ const PRIORITIES = {
   high: { label: 'High', color: 'bg-gray-100 text-gray-700 border-gray-300' },
   medium: { label: 'Medium', color: 'bg-gray-50 text-gray-600 border-gray-200' },
   low: { label: 'Low', color: 'bg-gray-50 text-gray-500 border-gray-200' },
+}
+
+const ASSIGNEES = {
+  som: { label: 'Som', avatar: 'S', color: 'bg-gray-900 text-white' },
+  bhoot: { label: 'Bhoot', avatar: '👻', color: 'bg-gray-100 text-gray-800 border border-gray-300' },
 }
 
 export default function Kanban() {
@@ -353,15 +359,25 @@ function Column({ column, cards, onRename, onDelete, onAddCard, onEditCard, onDe
                             ))}
                         </div>
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          if (confirm('Delete this card?')) onDeleteCard(card.id)
-                        }}
-                        className="p-1 text-gray-300 hover:text-red-500 rounded-md opacity-0 group-hover:opacity-100 transition-all"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (confirm('Delete this card?')) onDeleteCard(card.id)
+                          }}
+                          className="p-1 text-gray-300 hover:text-red-500 rounded-md opacity-0 group-hover:opacity-100 transition-all"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                        {card.assigned_to && ASSIGNEES[card.assigned_to] && (
+                          <span
+                            className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-semibold ${ASSIGNEES[card.assigned_to].color}`}
+                            title={ASSIGNEES[card.assigned_to].label}
+                          >
+                            {ASSIGNEES[card.assigned_to].avatar}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -392,6 +408,7 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
   const [dueDate, setDueDate] = useState(card?.due_date || '')
   const [labelsText, setLabelsText] = useState(card?.labels?.join(', ') || '')
   const [selectedColumn, setSelectedColumn] = useState(columnId)
+  const [assignedTo, setAssignedTo] = useState(card?.assigned_to || '')
 
   // Parse existing description — could be JSON (Tiptap) or plain string
   const initialContent = (() => {
@@ -448,6 +465,7 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
       priority,
       due_date: dueDate || null,
       labels,
+      assigned_to: assignedTo || null,
     }
 
     // If column changed on edit, include column_id
@@ -541,6 +559,43 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
                   <option key={col.id} value={col.id}>{col.title}</option>
                 ))}
               </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Assignee</label>
+              <div className="space-y-1.5">
+                <button
+                  type="button"
+                  onClick={() => setAssignedTo('')}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all border ${
+                    !assignedTo
+                      ? 'bg-gray-50 border-gray-400 ring-1 ring-gray-400/30'
+                      : 'bg-white border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-400">
+                    <User className="w-3.5 h-3.5" />
+                  </span>
+                  <span className="text-gray-500">Unassigned</span>
+                </button>
+                {Object.entries(ASSIGNEES).map(([key, { label, avatar, color }]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setAssignedTo(key)}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all border ${
+                      assignedTo === key
+                        ? 'bg-gray-50 border-gray-400 ring-1 ring-gray-400/30'
+                        : 'bg-white border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-semibold ${color}`}>
+                      {avatar}
+                    </span>
+                    <span className="text-gray-800 font-medium">{label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div>

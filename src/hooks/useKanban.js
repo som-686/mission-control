@@ -116,6 +116,7 @@ export function useKanban() {
       priority: card.priority || 'medium',
       due_date: card.due_date || null,
       labels: card.labels || [],
+      assigned_to: card.assigned_to || null,
       position: colCards.length,
     }
 
