@@ -11,6 +11,7 @@ import {
   X,
   ChevronRight,
 } from 'lucide-react'
+import NotificationBell from './NotificationBell'
 
 const navItems = [
   { to: '/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -58,12 +59,17 @@ export default function Layout() {
             <Rocket className="w-4 h-4 text-white" />
           </div>
           <span className="text-sm font-semibold text-gray-900 tracking-tight">Mission Control</span>
-          <button
-            className="ml-auto lg:hidden text-gray-400 hover:text-gray-900 transition-colors"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="ml-auto flex items-center gap-1">
+            <div className="hidden lg:block">
+              <NotificationBell />
+            </div>
+            <button
+              className="lg:hidden text-gray-400 hover:text-gray-900 transition-colors"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Nav */}
@@ -121,6 +127,9 @@ export default function Layout() {
           <div className="flex items-center gap-2 ml-3">
             <Rocket className="w-4 h-4 text-gray-900" />
             <span className="text-sm font-semibold text-gray-900">Mission Control</span>
+          </div>
+          <div className="ml-auto">
+            <NotificationBell />
           </div>
         </header>
 

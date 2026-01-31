@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { useKanban } from '../hooks/useKanban'
 import { useComments } from '../hooks/useComments'
@@ -95,6 +96,21 @@ export default function Kanban() {
   const [addingColumn, setAddingColumn] = useState(false)
   const [newColumnTitle, setNewColumnTitle] = useState('')
   const [filterTag, setFilterTag] = useState('')
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // Deep-link: open card from ?card=<id> (e.g. notification click)
+  useEffect(() => {
+    const cardId = searchParams.get('card')
+    if (cardId && cards.length > 0) {
+      const target = cards.find((c) => c.id === cardId)
+      if (target) {
+        setEditingCard(target)
+        setShowCardModal(true)
+        // Clean up URL
+        setSearchParams({}, { replace: true })
+      }
+    }
+  }, [searchParams, cards, setSearchParams])
 
   // Collect all unique tags across cards
   const allTags = [...new Set(cards.flatMap((c) => c.tags || []))].sort()
