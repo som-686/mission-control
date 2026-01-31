@@ -141,7 +141,7 @@ export default function Kanban() {
               {cards.length} task{cards.length !== 1 ? 's' : ''} across {columns.length} columns
             </p>
           </div>
-          <KanbanIllust className="hidden lg:block w-36 h-24 flex-shrink-0 opacity-20" />
+          <KanbanIllust className="hidden md:block w-48 h-32 flex-shrink-0" />
         </div>
         {allTags.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">

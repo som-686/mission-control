@@ -305,7 +305,7 @@ export default function Dashboard() {
             </p>
           </div>
         </div>
-        <DashboardIllust className="hidden lg:block w-40 h-32 flex-shrink-0 opacity-20" />
+        <DashboardIllust className="hidden md:block w-52 h-40 flex-shrink-0" />
       </div>
 
       {/* ── Quick Actions ──────────────────────── */}

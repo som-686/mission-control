@@ -47,7 +47,7 @@ export default function Documents() {
               {documents.length} document{documents.length !== 1 ? 's' : ''}
             </p>
           </div>
-          <DocumentsIllust className="hidden lg:block w-36 h-24 flex-shrink-0 opacity-20" />
+          <DocumentsIllust className="hidden md:block w-48 h-32 flex-shrink-0" />
         </div>
         <button
           onClick={() => navigate('/documents/new')}
