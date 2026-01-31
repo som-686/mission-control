@@ -563,39 +563,16 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
 
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Assignee</label>
-              <div className="space-y-1.5">
-                <button
-                  type="button"
-                  onClick={() => setAssignedTo('')}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all border ${
-                    !assignedTo
-                      ? 'bg-gray-50 border-gray-400 ring-1 ring-gray-400/30'
-                      : 'bg-white border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-400">
-                    <User className="w-3.5 h-3.5" />
-                  </span>
-                  <span className="text-gray-500">Unassigned</span>
-                </button>
-                {Object.entries(ASSIGNEES).map(([key, { label, avatar, color }]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setAssignedTo(key)}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all border ${
-                      assignedTo === key
-                        ? 'bg-gray-50 border-gray-400 ring-1 ring-gray-400/30'
-                        : 'bg-white border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-semibold ${color}`}>
-                      {avatar}
-                    </span>
-                    <span className="text-gray-800 font-medium">{label}</span>
-                  </button>
+              <select
+                value={assignedTo}
+                onChange={(e) => setAssignedTo(e.target.value)}
+                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400/40 transition-all"
+              >
+                <option value="">Unassigned</option>
+                {Object.entries(ASSIGNEES).map(([key, { label, avatar }]) => (
+                  <option key={key} value={key}>{avatar} {label}</option>
                 ))}
-              </div>
+              </select>
             </div>
 
             <div>
