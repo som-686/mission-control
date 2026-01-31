@@ -229,6 +229,10 @@ export default function DocumentEditor() {
     }
   }, [id, editor])
 
+  // Track editor ref for realtime callback
+  const editorRef = useRef(null)
+  editorRef.current = editor
+
   // Realtime: update editor when document is changed externally
   useEffect(() => {
     if (!docId || !isSupabaseConfigured) return
@@ -240,9 +244,14 @@ export default function DocumentEditor() {
         { event: 'UPDATE', schema: 'public', table: 'documents', filter: `id=eq.${docId}` },
         (payload) => {
           const updated = payload.new
-          // Only apply if the change came from someone else (avoid overwriting our own edits)
-          if (editor && !editor.isFocused && updated.content) {
-            editor.commands.setContent(updated.content)
+          const ed = editorRef.current
+          if (ed && updated.content) {
+            const currentPos = ed.state.selection.from
+            ed.commands.setContent(updated.content)
+            try {
+              const maxPos = ed.state.doc.content.size
+              ed.commands.setTextSelection(Math.min(currentPos, maxPos))
+            } catch { /* ignore */ }
           }
           if (updated.title && updated.title !== title && !document.activeElement?.matches('input')) {
             setTitle(updated.title)
@@ -254,7 +263,7 @@ export default function DocumentEditor() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [docId, editor])
+  }, [docId])
 
   const toolbarButtons = [
     { icon: Bold, action: () => editor?.chain().focus().toggleBold().run(), active: editor?.isActive('bold') },
