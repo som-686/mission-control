@@ -6,6 +6,8 @@ import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Mention from '@tiptap/extension-mention'
 import { mentionSuggestion } from '../lib/mention'
+import { notifyMentions } from '../hooks/useNotifications'
+import { useAuth } from '../contexts/AuthContext'
 import {
   ArrowLeft,
   Check,
@@ -25,6 +27,7 @@ import {
 export default function DocumentEditor() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const { createDocument, updateDocument, getDocument } = useDocuments()
 
   const [title, setTitle] = useState('')
@@ -156,6 +159,14 @@ export default function DocumentEditor() {
     [docId, title]
   )
 
+  // Determine current user's author name
+  const authorName = (() => {
+    const email = user?.email || ''
+    if (email.includes('paglabhoot')) return 'bhoot'
+    if (email.includes('somnath') || email.includes('som')) return 'som'
+    return email.split('@')[0] || 'unknown'
+  })()
+
   async function saveDocument(editorInstance) {
     const ed = editorInstance || editor
     if (!ed) return
@@ -169,11 +180,14 @@ export default function DocumentEditor() {
     try {
       if (docId) {
         await updateDocument(docId, { title: docTitle, content })
+        // Notify mentioned users
+        notifyMentions({ content, sender: authorName, documentId: docId, docTitle })
       } else {
         const created = await createDocument({ title: docTitle, content })
         if (created) {
           setDocId(created.id)
           window.history.replaceState(null, '', `/documents/${created.id}`)
+          notifyMentions({ content, sender: authorName, documentId: created.id, docTitle })
         }
       }
       setSaved(true)

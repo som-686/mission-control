@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { useKanban } from '../hooks/useKanban'
 import { useComments } from '../hooks/useComments'
+import { notifyMentions } from '../hooks/useNotifications'
 import { useAuth } from '../contexts/AuthContext'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
@@ -499,6 +500,17 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
     }
 
     onSave(data)
+
+    // Notify mentioned users in the description
+    if (editor) {
+      const content = editor.getJSON()
+      notifyMentions({
+        content,
+        sender: authorName,
+        cardId: card?.id || null,
+        cardTitle: title.trim(),
+      })
+    }
   }
 
   const toolbarButtons = [
