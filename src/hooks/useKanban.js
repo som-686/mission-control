@@ -61,6 +61,43 @@ export function useKanban() {
     fetchData()
   }, [fetchData])
 
+  // Realtime subscription for live card updates
+  useEffect(() => {
+    if (!user || !isSupabaseConfigured) return
+
+    const channel = supabase
+      .channel(`kanban-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'kanban_cards', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          setCards((prev) => {
+            if (prev.some((c) => c.id === payload.new.id)) return prev
+            return [...prev, payload.new]
+          })
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'kanban_cards', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          setCards((prev) => prev.map((c) => (c.id === payload.new.id ? payload.new : c)))
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'kanban_cards', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          setCards((prev) => prev.filter((c) => c.id !== payload.old.id))
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user])
+
   // ─── Column CRUD ──────────────────────────
 
   async function addColumn(title) {

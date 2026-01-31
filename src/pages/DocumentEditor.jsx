@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useDocuments } from '../hooks/useDocuments'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -227,6 +228,33 @@ export default function DocumentEditor() {
       setLoaded(true)
     }
   }, [id, editor])
+
+  // Realtime: update editor when document is changed externally
+  useEffect(() => {
+    if (!docId || !isSupabaseConfigured) return
+
+    const channel = supabase
+      .channel(`doc-editor-${docId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'documents', filter: `id=eq.${docId}` },
+        (payload) => {
+          const updated = payload.new
+          // Only apply if the change came from someone else (avoid overwriting our own edits)
+          if (editor && !editor.isFocused && updated.content) {
+            editor.commands.setContent(updated.content)
+          }
+          if (updated.title && updated.title !== title && !document.activeElement?.matches('input')) {
+            setTitle(updated.title)
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [docId, editor])
 
   const toolbarButtons = [
     { icon: Bold, action: () => editor?.chain().focus().toggleBold().run(), active: editor?.isActive('bold') },

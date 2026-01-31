@@ -33,6 +33,35 @@ export function useDocuments() {
     fetchDocuments()
   }, [fetchDocuments])
 
+  // Realtime subscription for live document updates
+  useEffect(() => {
+    if (!user || !isSupabaseConfigured) return
+
+    const channel = supabase
+      .channel(`documents-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'documents', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setDocuments((prev) => {
+              if (prev.some((d) => d.id === payload.new.id)) return prev
+              return [payload.new, ...prev]
+            })
+          } else if (payload.eventType === 'UPDATE') {
+            setDocuments((prev) => prev.map((d) => (d.id === payload.new.id ? payload.new : d)))
+          } else if (payload.eventType === 'DELETE') {
+            setDocuments((prev) => prev.filter((d) => d.id !== payload.old.id))
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user])
+
   async function createDocument(doc) {
     if (!user) return null
 

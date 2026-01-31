@@ -37,6 +37,37 @@ export function useComments(cardId) {
     fetchComments()
   }, [fetchComments])
 
+  // Realtime subscription for live comment updates
+  useEffect(() => {
+    if (!cardId || !isSupabaseConfigured) return
+
+    const channel = supabase
+      .channel(`comments-${cardId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'card_comments', filter: `card_id=eq.${cardId}` },
+        (payload) => {
+          setComments((prev) => {
+            // Avoid duplicates (we may have already added it optimistically)
+            if (prev.some((c) => c.id === payload.new.id)) return prev
+            return [...prev, payload.new]
+          })
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'card_comments', filter: `card_id=eq.${cardId}` },
+        (payload) => {
+          setComments((prev) => prev.filter((c) => c.id !== payload.old.id))
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [cardId])
+
   async function addComment(content, author) {
     if (!cardId || !user || !content.trim()) return null
 
