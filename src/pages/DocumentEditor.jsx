@@ -181,13 +181,14 @@ export default function DocumentEditor() {
     try {
       if (docId) {
         await updateDocument(docId, { title: docTitle, content })
-        // Notify mentioned users
-        notifyMentions({ content, sender: authorName, documentId: docId, docTitle })
+        if (loaded) notifyMentions({ content, sender: authorName, documentId: docId, docTitle })
       } else {
         const created = await createDocument({ title: docTitle, content })
         if (created) {
           setDocId(created.id)
           window.history.replaceState(null, '', `/documents/${created.id}`)
+          // Seed tracker for the new doc so subsequent auto-saves don't re-notify
+          seedMentionTracker('doc', created.id, content)
           notifyMentions({ content, sender: authorName, documentId: created.id, docTitle })
         }
       }
