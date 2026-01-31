@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase, isSupabaseConfigured, demoTable } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 
+// All known collaborators — used to notify the *other* person on any comment
+const ALL_USERS = ['som', 'bhoot']
+
 const demoComments = demoTable('card_comments')
 
 export function useComments(cardId) {
@@ -53,6 +56,8 @@ export function useComments(cardId) {
 
       if (!error && data) {
         setComments((prev) => [...prev, data])
+        // Notify the other person about the comment
+        notifyCommentRecipients(author, cardId, content.trim())
         return data
       }
     } else {
@@ -62,6 +67,20 @@ export function useComments(cardId) {
     }
 
     return null
+  }
+
+  async function notifyCommentRecipients(sender, cId, text) {
+    if (!isSupabaseConfigured) return
+    const recipients = ALL_USERS.filter((u) => u !== sender)
+    const preview = text.length > 80 ? text.slice(0, 80) + '…' : text
+    const notifications = recipients.map((recipient) => ({
+      recipient,
+      sender,
+      type: 'comment',
+      card_id: cId,
+      message: `@${sender} commented: "${preview}"`,
+    }))
+    await supabase.from('notifications').insert(notifications)
   }
 
   async function updateComment(commentId, content) {
