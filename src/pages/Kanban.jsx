@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { useKanban } from '../hooks/useKanban'
 import { useComments } from '../hooks/useComments'
@@ -474,6 +474,10 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
     },
   })
 
+  // Track the latest editor ref so the realtime callback always has it
+  const editorRef = useRef(null)
+  editorRef.current = editor
+
   // Realtime: update editor when card description is changed externally
   useEffect(() => {
     if (!card?.id || !isSupabaseConfigured) return
@@ -485,18 +489,23 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
         { event: 'UPDATE', schema: 'public', table: 'kanban_cards', filter: `id=eq.${card.id}` },
         (payload) => {
           const updated = payload.new
-          // Update description in editor if not currently focused
-          if (editor && !editor.isFocused && updated.description) {
+          const ed = editorRef.current
+          if (ed && updated.description) {
             try {
               const content = JSON.parse(updated.description)
               if (content && content.type === 'doc') {
-                editor.commands.setContent(content)
+                // Save cursor position, update content, restore cursor
+                const currentPos = ed.state.selection.from
+                ed.commands.setContent(content)
+                try {
+                  const maxPos = ed.state.doc.content.size
+                  ed.commands.setTextSelection(Math.min(currentPos, maxPos))
+                } catch { /* ignore */ }
               }
             } catch {
               // not JSON, skip
             }
           }
-          // Update other fields if not actively editing them
           if (updated.assigned_to !== undefined) setAssignedTo(updated.assigned_to || '')
           if (updated.priority) setPriority(updated.priority)
           if (updated.due_date !== undefined) setDueDate(updated.due_date || '')
@@ -508,7 +517,7 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [card?.id, editor])
+  }, [card?.id])
 
   function handleSubmit(e) {
     e.preventDefault()
