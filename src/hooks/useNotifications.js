@@ -26,7 +26,25 @@ export function extractMentions(content) {
   return [...new Set(mentions)] // dedupe
 }
 
-// Create notifications for mentioned users
+// Track which mentions have already been notified (per doc/card)
+const _notifiedKey = (type, id) => `notified_mentions_${type}_${id}`
+
+function getPreviouslyNotified(type, id) {
+  try {
+    const raw = sessionStorage.getItem(_notifiedKey(type, id))
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+function savePreviouslyNotified(type, id, mentions) {
+  try {
+    sessionStorage.setItem(_notifiedKey(type, id), JSON.stringify(mentions))
+  } catch { /* ignore */ }
+}
+
+// Create notifications for mentioned users — only for NEW mentions
 export async function notifyMentions({
   content,
   sender,
@@ -41,7 +59,16 @@ export async function notifyMentions({
   // Don't notify yourself
   const recipients = mentioned.filter((id) => id !== sender)
 
-  if (recipients.length === 0) return
+  // Check which mentions are new
+  const type = cardId ? 'card' : 'doc'
+  const entityId = cardId || documentId
+  const previouslyNotified = getPreviouslyNotified(type, entityId)
+  const newRecipients = recipients.filter((id) => !previouslyNotified.includes(id))
+
+  // Save all current mentions as notified
+  savePreviouslyNotified(type, entityId, recipients)
+
+  if (newRecipients.length === 0) return
 
   const context = cardTitle
     ? `card "${cardTitle}"`
@@ -49,7 +76,7 @@ export async function notifyMentions({
     ? `document "${docTitle}"`
     : 'a document'
 
-  const notifications = recipients.map((recipient) => ({
+  const notifications = newRecipients.map((recipient) => ({
     recipient,
     sender,
     type: cardId ? 'card_mention' : 'doc_mention',
