@@ -39,7 +39,7 @@ export default function Documents() {
   return (
     <div className="p-6 lg:p-8 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4 mb-8">
+      <div className="bg-white border border-gray-200 rounded-2xl px-6 sm:px-8 py-5 flex items-center justify-between gap-4 mb-8 overflow-hidden">
         <div className="flex items-center gap-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Documents</h1>
@@ -47,7 +47,7 @@ export default function Documents() {
               {documents.length} document{documents.length !== 1 ? 's' : ''}
             </p>
           </div>
-          <DocumentsIllust className="hidden lg:block w-32 h-22 flex-shrink-0 opacity-20" />
+          <DocumentsIllust className="hidden lg:block w-36 h-24 flex-shrink-0 opacity-20" />
         </div>
         <button
           onClick={() => navigate('/documents/new')}

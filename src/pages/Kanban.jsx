@@ -133,7 +133,7 @@ export default function Kanban() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 lg:px-8 py-5 border-b border-gray-200">
+      <div className="mx-6 lg:mx-8 mt-5 mb-4 bg-white border border-gray-200 rounded-2xl px-6 py-5 flex items-center justify-between overflow-hidden">
         <div className="flex items-center gap-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Tasks</h1>
@@ -141,7 +141,7 @@ export default function Kanban() {
               {cards.length} task{cards.length !== 1 ? 's' : ''} across {columns.length} columns
             </p>
           </div>
-          <KanbanIllust className="hidden lg:block w-32 h-22 flex-shrink-0 opacity-20" />
+          <KanbanIllust className="hidden lg:block w-36 h-24 flex-shrink-0 opacity-20" />
         </div>
         {allTags.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
