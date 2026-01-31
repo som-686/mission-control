@@ -88,6 +88,10 @@ export default function Kanban() {
   const [newCardColId, setNewCardColId] = useState(null)
   const [addingColumn, setAddingColumn] = useState(false)
   const [newColumnTitle, setNewColumnTitle] = useState('')
+  const [filterTag, setFilterTag] = useState('')
+
+  // Collect all unique tags across cards
+  const allTags = [...new Set(cards.flatMap((c) => c.tags || []))].sort()
 
   function onDragEnd(result) {
     const { draggableId, destination, source } = result
@@ -100,6 +104,7 @@ export default function Kanban() {
   function getColumnCards(colId) {
     return cards
       .filter((c) => c.column_id === colId)
+      .filter((c) => !filterTag || (c.tags && c.tags.includes(filterTag)))
       .sort((a, b) => a.position - b.position)
   }
 
@@ -129,6 +134,34 @@ export default function Kanban() {
             {cards.length} task{cards.length !== 1 ? 's' : ''} across {columns.length} columns
           </p>
         </div>
+        {allTags.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-gray-400 font-medium">Filter:</span>
+            <button
+              onClick={() => setFilterTag('')}
+              className={`text-xs px-2.5 py-1 rounded-lg border transition-all ${
+                !filterTag
+                  ? 'bg-gray-900 text-white border-gray-900'
+                  : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              All
+            </button>
+            {allTags.map((tag) => (
+              <button
+                key={tag}
+                onClick={() => setFilterTag(filterTag === tag ? '' : tag)}
+                className={`text-xs px-2.5 py-1 rounded-lg border transition-all ${
+                  filterTag === tag
+                    ? 'bg-gray-900 text-white border-gray-900'
+                    : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Board */}
@@ -356,13 +389,13 @@ function Column({ column, cards, onRename, onDelete, onAddCard, onEditCard, onDe
                               {format(new Date(card.due_date), 'MMM d')}
                             </span>
                           )}
-                          {card.labels &&
-                            card.labels.map((label) => (
+                          {card.tags &&
+                            card.tags.map((tag) => (
                               <span
-                                key={label}
+                                key={tag}
                                 className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 border border-gray-200"
                               >
-                                {label}
+                                {tag}
                               </span>
                             ))}
                         </div>
@@ -415,7 +448,7 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
   const [title, setTitle] = useState(card?.title || '')
   const [priority, setPriority] = useState(card?.priority || 'medium')
   const [dueDate, setDueDate] = useState(card?.due_date || '')
-  const [labelsText, setLabelsText] = useState(card?.labels?.join(', ') || '')
+  const [tagsText, setTagsText] = useState(card?.tags?.join(', ') || '')
   const [selectedColumn, setSelectedColumn] = useState(columnId)
   const [assignedTo, setAssignedTo] = useState(card?.assigned_to || '')
   const [commentText, setCommentText] = useState('')
@@ -509,7 +542,7 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
           if (updated.assigned_to !== undefined) setAssignedTo(updated.assigned_to || '')
           if (updated.priority) setPriority(updated.priority)
           if (updated.due_date !== undefined) setDueDate(updated.due_date || '')
-          if (updated.labels) setLabelsText(updated.labels.join(', '))
+          if (updated.tags) setTagsText(updated.tags.join(', '))
         }
       )
       .subscribe()
@@ -523,9 +556,9 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
     e.preventDefault()
     if (!title.trim()) return
 
-    const labels = labelsText
+    const tags = tagsText
       .split(',')
-      .map((l) => l.trim())
+      .map((t) => t.trim())
       .filter(Boolean)
 
     // Store description as Tiptap JSON
@@ -536,7 +569,7 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
       description: descriptionJson,
       priority,
       due_date: dueDate || null,
-      labels,
+      tags,
       assigned_to: assignedTo || null,
     }
 
@@ -779,21 +812,21 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Labels</label>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Tags</label>
               <input
-                value={labelsText}
-                onChange={(e) => setLabelsText(e.target.value)}
+                value={tagsText}
+                onChange={(e) => setTagsText(e.target.value)}
                 placeholder="design, frontend, bug"
                 className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/40 transition-all"
               />
-              {labelsText && (
+              {tagsText && (
                 <div className="flex flex-wrap gap-1.5 mt-2">
-                  {labelsText.split(',').map((l) => l.trim()).filter(Boolean).map((label) => (
+                  {tagsText.split(',').map((t) => t.trim()).filter(Boolean).map((tag) => (
                     <span
-                      key={label}
+                      key={tag}
                       className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 border border-gray-200"
                     >
-                      {label}
+                      {tag}
                     </span>
                   ))}
                 </div>

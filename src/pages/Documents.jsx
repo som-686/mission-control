@@ -14,11 +14,14 @@ import { format } from 'date-fns'
 export default function Documents() {
   const { documents, loading, deleteDocument, updateDocument } = useDocuments()
   const [search, setSearch] = useState('')
+  const [filterTag, setFilterTag] = useState('')
   const navigate = useNavigate()
 
-  const filtered = documents.filter((doc) =>
-    doc.title.toLowerCase().includes(search.toLowerCase())
-  )
+  const allTags = [...new Set(documents.flatMap((d) => d.tags || []))].sort()
+
+  const filtered = documents
+    .filter((doc) => doc.title.toLowerCase().includes(search.toLowerCase()))
+    .filter((doc) => !filterTag || (doc.tags && doc.tags.includes(filterTag)))
 
   function handleDelete(e, id) {
     e.stopPropagation()
@@ -62,6 +65,36 @@ export default function Documents() {
           className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/40 focus:border-gray-400 transition-all"
         />
       </div>
+
+      {/* Tag filter */}
+      {allTags.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap mb-6">
+          <span className="text-xs text-gray-400 font-medium">Tags:</span>
+          <button
+            onClick={() => setFilterTag('')}
+            className={`text-xs px-2.5 py-1 rounded-lg border transition-all ${
+              !filterTag
+                ? 'bg-gray-900 text-white border-gray-900'
+                : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            All
+          </button>
+          {allTags.map((tag) => (
+            <button
+              key={tag}
+              onClick={() => setFilterTag(filterTag === tag ? '' : tag)}
+              className={`text-xs px-2.5 py-1 rounded-lg border transition-all ${
+                filterTag === tag
+                  ? 'bg-gray-900 text-white border-gray-900'
+                  : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Document list */}
       {loading ? (

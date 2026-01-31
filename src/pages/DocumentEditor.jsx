@@ -32,6 +32,7 @@ export default function DocumentEditor() {
   const { createDocument, updateDocument, getDocument } = useDocuments()
 
   const [title, setTitle] = useState('')
+  const [tagsText, setTagsText] = useState('')
   const [docId, setDocId] = useState(id === 'new' ? null : id)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -177,13 +178,14 @@ export default function DocumentEditor() {
 
     const content = ed.getJSON()
     const docTitle = title || 'Untitled'
+    const tags = tagsText.split(',').map((t) => t.trim()).filter(Boolean)
 
     try {
       if (docId) {
-        await updateDocument(docId, { title: docTitle, content })
+        await updateDocument(docId, { title: docTitle, content, tags })
         if (loaded) notifyMentions({ content, sender: authorName, documentId: docId, docTitle })
       } else {
-        const created = await createDocument({ title: docTitle, content })
+        const created = await createDocument({ title: docTitle, content, tags })
         if (created) {
           setDocId(created.id)
           window.history.replaceState(null, '', `/documents/${created.id}`)
@@ -211,7 +213,7 @@ export default function DocumentEditor() {
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     }
-  }, [title])
+  }, [title, tagsText])
 
   // Load existing document
   useEffect(() => {
@@ -219,6 +221,7 @@ export default function DocumentEditor() {
       getDocument(id).then(({ data, error }) => {
         if (data && !error) {
           setTitle(data.title || '')
+          setTagsText(data.tags?.join(', ') || '')
           if (editor && data.content) {
             editor.commands.setContent(data.content)
           }
@@ -339,8 +342,30 @@ export default function DocumentEditor() {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Untitled"
-          className="w-full text-3xl font-bold text-gray-900 bg-transparent border-none outline-none placeholder-gray-300 mb-6"
+          className="w-full text-3xl font-bold text-gray-900 bg-transparent border-none outline-none placeholder-gray-300 mb-2"
         />
+
+        <div className="flex items-center gap-2 mb-6">
+          <input
+            type="text"
+            value={tagsText}
+            onChange={(e) => setTagsText(e.target.value)}
+            placeholder="Add tags (comma separated)…"
+            className="text-sm text-gray-500 bg-transparent border-none outline-none placeholder-gray-300 flex-1"
+          />
+          {tagsText && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {tagsText.split(',').map((t) => t.trim()).filter(Boolean).map((tag) => (
+                <span
+                  key={tag}
+                  className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-500 border border-gray-200"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="relative">
           <EditorContent editor={editor} />
