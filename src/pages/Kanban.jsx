@@ -10,6 +10,7 @@ import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Mention from '@tiptap/extension-mention'
 import { mentionSuggestion } from '../lib/mention'
+import TagInput from '../components/TagInput'
 import {
   Plus,
   MoreHorizontal,
@@ -448,7 +449,7 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
   const [title, setTitle] = useState(card?.title || '')
   const [priority, setPriority] = useState(card?.priority || 'medium')
   const [dueDate, setDueDate] = useState(card?.due_date || '')
-  const [tagsText, setTagsText] = useState(card?.tags?.length ? card.tags.map(t => `#${t}`).join(' ') : '')
+  const [tags, setTags] = useState(card?.tags || [])
   const [selectedColumn, setSelectedColumn] = useState(columnId)
   const [assignedTo, setAssignedTo] = useState(card?.assigned_to || '')
   const [commentText, setCommentText] = useState('')
@@ -542,7 +543,7 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
           if (updated.assigned_to !== undefined) setAssignedTo(updated.assigned_to || '')
           if (updated.priority) setPriority(updated.priority)
           if (updated.due_date !== undefined) setDueDate(updated.due_date || '')
-          if (updated.tags) setTagsText(updated.tags.map(t => `#${t}`).join(' '))
+          if (updated.tags) setTags(updated.tags)
         }
       )
       .subscribe()
@@ -555,11 +556,6 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
   function handleSubmit(e) {
     e.preventDefault()
     if (!title.trim()) return
-
-    const tags = tagsText
-      .split(/\s*#/)
-      .map((t) => t.trim())
-      .filter(Boolean)
 
     // Store description as Tiptap JSON
     const descriptionJson = editor ? JSON.stringify(editor.getJSON()) : ''
@@ -813,24 +809,12 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
 
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Tags</label>
-              <input
-                value={tagsText}
-                onChange={(e) => setTagsText(e.target.value)}
+              <TagInput
+                tags={tags}
+                onChange={setTags}
                 placeholder="#design #frontend #bug"
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/40 transition-all"
+                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg min-h-[38px]"
               />
-              {tagsText && (
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {tagsText.split(/\s*#/).map((t) => t.trim()).filter(Boolean).map((tag) => (
-                    <span
-                      key={tag}
-                      className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 border border-gray-200"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
 
             {card && (

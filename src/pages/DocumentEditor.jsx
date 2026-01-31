@@ -8,6 +8,7 @@ import Placeholder from '@tiptap/extension-placeholder'
 import Mention from '@tiptap/extension-mention'
 import { mentionSuggestion } from '../lib/mention'
 import { notifyMentions, seedMentionTracker } from '../hooks/useNotifications'
+import TagInput from '../components/TagInput'
 import { useAuth } from '../contexts/AuthContext'
 import {
   ArrowLeft,
@@ -32,7 +33,7 @@ export default function DocumentEditor() {
   const { createDocument, updateDocument, getDocument } = useDocuments()
 
   const [title, setTitle] = useState('')
-  const [tagsText, setTagsText] = useState('')
+  const [tags, setTags] = useState([])
   const [docId, setDocId] = useState(id === 'new' ? null : id)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -178,14 +179,14 @@ export default function DocumentEditor() {
 
     const content = ed.getJSON()
     const docTitle = title || 'Untitled'
-    const tags = tagsText.split(/\s*#/).map((t) => t.trim()).filter(Boolean)
+    const saveTags = [...tags]
 
     try {
       if (docId) {
-        await updateDocument(docId, { title: docTitle, content, tags })
+        await updateDocument(docId, { title: docTitle, content, tags: saveTags })
         if (loaded) notifyMentions({ content, sender: authorName, documentId: docId, docTitle })
       } else {
-        const created = await createDocument({ title: docTitle, content, tags })
+        const created = await createDocument({ title: docTitle, content, tags: saveTags })
         if (created) {
           setDocId(created.id)
           window.history.replaceState(null, '', `/documents/${created.id}`)
@@ -213,7 +214,7 @@ export default function DocumentEditor() {
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     }
-  }, [title, tagsText])
+  }, [title, tags])
 
   // Load existing document
   useEffect(() => {
@@ -221,7 +222,7 @@ export default function DocumentEditor() {
       getDocument(id).then(({ data, error }) => {
         if (data && !error) {
           setTitle(data.title || '')
-          setTagsText(data.tags?.length ? data.tags.map(t => `#${t}`).join(' ') : '')
+          setTags(data.tags || [])
           if (editor && data.content) {
             editor.commands.setContent(data.content)
           }
@@ -345,26 +346,15 @@ export default function DocumentEditor() {
           className="w-full text-3xl font-bold text-gray-900 bg-transparent border-none outline-none placeholder-gray-300 mb-2"
         />
 
-        <div className="flex items-center gap-2 mb-6">
-          <input
-            type="text"
-            value={tagsText}
-            onChange={(e) => setTagsText(e.target.value)}
+        <div className="mb-6">
+          <TagInput
+            tags={tags}
+            onChange={setTags}
             placeholder="#design #notes #ideas"
-            className="text-sm text-gray-500 bg-transparent border-none outline-none placeholder-gray-300 flex-1"
+            className="min-h-[28px]"
+            inputClassName="bg-transparent border-none outline-none text-sm text-gray-500 placeholder-gray-300 min-w-[60px] flex-1 py-0"
+            chipClassName="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-500 border border-gray-200"
           />
-          {tagsText && (
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {tagsText.split(/\s*#/).map((t) => t.trim()).filter(Boolean).map((tag) => (
-                <span
-                  key={tag}
-                  className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-500 border border-gray-200"
-                >
-                  #{tag}
-                </span>
-              ))}
-            </div>
-          )}
         </div>
 
         <div className="relative">
