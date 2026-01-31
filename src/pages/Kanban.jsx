@@ -6,6 +6,8 @@ import { useAuth } from '../contexts/AuthContext'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
+import Mention from '@tiptap/extension-mention'
+import { mentionSuggestion } from '../lib/mention'
 import {
   Plus,
   MoreHorizontal,
@@ -453,7 +455,13 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
     extensions: [
       StarterKit,
       Placeholder.configure({
-        placeholder: 'Add a detailed description… Type / for commands',
+        placeholder: 'Add a detailed description… Type @ to mention, / for commands',
+      }),
+      Mention.configure({
+        HTMLAttributes: {
+          class: 'mention',
+        },
+        suggestion: mentionSuggestion(),
       }),
     ],
     content: initialContent,

@@ -4,6 +4,8 @@ import { useDocuments } from '../hooks/useDocuments'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
+import Mention from '@tiptap/extension-mention'
+import { mentionSuggestion } from '../lib/mention'
 import {
   ArrowLeft,
   Check,
@@ -58,6 +60,12 @@ export default function DocumentEditor() {
       StarterKit,
       Placeholder.configure({
         placeholder: 'Start writing, or type / for commands…',
+      }),
+      Mention.configure({
+        HTMLAttributes: {
+          class: 'mention',
+        },
+        suggestion: mentionSuggestion(),
       }),
     ],
     content: '',
