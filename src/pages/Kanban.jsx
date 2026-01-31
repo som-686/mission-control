@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { useKanban } from '../hooks/useKanban'
 import { useComments } from '../hooks/useComments'
 import { notifyMentions } from '../hooks/useNotifications'
 import { useAuth } from '../contexts/AuthContext'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -472,6 +473,42 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
       },
     },
   })
+
+  // Realtime: update editor when card description is changed externally
+  useEffect(() => {
+    if (!card?.id || !isSupabaseConfigured) return
+
+    const channel = supabase
+      .channel(`card-modal-${card.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'kanban_cards', filter: `id=eq.${card.id}` },
+        (payload) => {
+          const updated = payload.new
+          // Update description in editor if not currently focused
+          if (editor && !editor.isFocused && updated.description) {
+            try {
+              const content = JSON.parse(updated.description)
+              if (content && content.type === 'doc') {
+                editor.commands.setContent(content)
+              }
+            } catch {
+              // not JSON, skip
+            }
+          }
+          // Update other fields if not actively editing them
+          if (updated.assigned_to !== undefined) setAssignedTo(updated.assigned_to || '')
+          if (updated.priority) setPriority(updated.priority)
+          if (updated.due_date !== undefined) setDueDate(updated.due_date || '')
+          if (updated.labels) setLabelsText(updated.labels.join(', '))
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [card?.id, editor])
 
   function handleSubmit(e) {
     e.preventDefault()
