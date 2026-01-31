@@ -157,7 +157,7 @@ export default function Kanban() {
                     : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
                 }`}
               >
-                {tag}
+                #{tag}
               </button>
             ))}
           </div>
@@ -395,7 +395,7 @@ function Column({ column, cards, onRename, onDelete, onAddCard, onEditCard, onDe
                                 key={tag}
                                 className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 border border-gray-200"
                               >
-                                {tag}
+                                #{tag}
                               </span>
                             ))}
                         </div>
@@ -448,7 +448,7 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
   const [title, setTitle] = useState(card?.title || '')
   const [priority, setPriority] = useState(card?.priority || 'medium')
   const [dueDate, setDueDate] = useState(card?.due_date || '')
-  const [tagsText, setTagsText] = useState(card?.tags?.join(', ') || '')
+  const [tagsText, setTagsText] = useState(card?.tags?.length ? card.tags.map(t => `#${t}`).join(' ') : '')
   const [selectedColumn, setSelectedColumn] = useState(columnId)
   const [assignedTo, setAssignedTo] = useState(card?.assigned_to || '')
   const [commentText, setCommentText] = useState('')
@@ -542,7 +542,7 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
           if (updated.assigned_to !== undefined) setAssignedTo(updated.assigned_to || '')
           if (updated.priority) setPriority(updated.priority)
           if (updated.due_date !== undefined) setDueDate(updated.due_date || '')
-          if (updated.tags) setTagsText(updated.tags.join(', '))
+          if (updated.tags) setTagsText(updated.tags.map(t => `#${t}`).join(' '))
         }
       )
       .subscribe()
@@ -557,7 +557,7 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
     if (!title.trim()) return
 
     const tags = tagsText
-      .split(',')
+      .split(/\s*#/)
       .map((t) => t.trim())
       .filter(Boolean)
 
@@ -816,17 +816,17 @@ function CardModal({ card, columnId, columns, onSave, onClose }) {
               <input
                 value={tagsText}
                 onChange={(e) => setTagsText(e.target.value)}
-                placeholder="design, frontend, bug"
+                placeholder="#design #frontend #bug"
                 className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/40 transition-all"
               />
               {tagsText && (
                 <div className="flex flex-wrap gap-1.5 mt-2">
-                  {tagsText.split(',').map((t) => t.trim()).filter(Boolean).map((tag) => (
+                  {tagsText.split(/\s*#/).map((t) => t.trim()).filter(Boolean).map((tag) => (
                     <span
                       key={tag}
                       className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 border border-gray-200"
                     >
-                      {tag}
+                      #{tag}
                     </span>
                   ))}
                 </div>

@@ -178,7 +178,7 @@ export default function DocumentEditor() {
 
     const content = ed.getJSON()
     const docTitle = title || 'Untitled'
-    const tags = tagsText.split(',').map((t) => t.trim()).filter(Boolean)
+    const tags = tagsText.split(/\s*#/).map((t) => t.trim()).filter(Boolean)
 
     try {
       if (docId) {
@@ -221,7 +221,7 @@ export default function DocumentEditor() {
       getDocument(id).then(({ data, error }) => {
         if (data && !error) {
           setTitle(data.title || '')
-          setTagsText(data.tags?.join(', ') || '')
+          setTagsText(data.tags?.length ? data.tags.map(t => `#${t}`).join(' ') : '')
           if (editor && data.content) {
             editor.commands.setContent(data.content)
           }
@@ -350,17 +350,17 @@ export default function DocumentEditor() {
             type="text"
             value={tagsText}
             onChange={(e) => setTagsText(e.target.value)}
-            placeholder="Add tags (comma separated)…"
+            placeholder="#design #notes #ideas"
             className="text-sm text-gray-500 bg-transparent border-none outline-none placeholder-gray-300 flex-1"
           />
           {tagsText && (
             <div className="flex items-center gap-1.5 flex-wrap">
-              {tagsText.split(',').map((t) => t.trim()).filter(Boolean).map((tag) => (
+              {tagsText.split(/\s*#/).map((t) => t.trim()).filter(Boolean).map((tag) => (
                 <span
                   key={tag}
                   className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-500 border border-gray-200"
                 >
-                  {tag}
+                  #{tag}
                 </span>
               ))}
             </div>

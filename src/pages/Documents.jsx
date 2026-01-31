@@ -90,7 +90,7 @@ export default function Documents() {
                   : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
               }`}
             >
-              {tag}
+              #{tag}
             </button>
           ))}
         </div>
@@ -144,7 +144,7 @@ export default function Documents() {
                       <span className="text-gray-300">·</span>
                       {doc.tags.slice(0, 3).map((tag) => (
                         <span key={tag} className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">
-                          {tag}
+                          #{tag}
                         </span>
                       ))}
                     </>
