@@ -10,6 +10,7 @@ import {
   Clock,
 } from 'lucide-react'
 import { format } from 'date-fns'
+import { DocumentsIllust } from '../components/illustrations'
 
 export default function Documents() {
   const { documents, loading, deleteDocument, updateDocument } = useDocuments()
@@ -38,16 +39,19 @@ export default function Documents() {
   return (
     <div className="p-6 lg:p-8 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Documents</h1>
-          <p className="text-gray-500 text-sm mt-1">
-            {documents.length} document{documents.length !== 1 ? 's' : ''}
-          </p>
+      <div className="flex items-center justify-between gap-4 mb-8">
+        <div className="flex items-center gap-5">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Documents</h1>
+            <p className="text-gray-500 text-sm mt-1">
+              {documents.length} document{documents.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+          <DocumentsIllust className="hidden lg:block w-28 h-22 opacity-[0.12]" />
         </div>
         <button
           onClick={() => navigate('/documents/new')}
-          className="flex items-center gap-2 px-4 py-2.5 bg-black hover:bg-gray-800 rounded-xl text-sm font-medium text-white transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 bg-black hover:bg-gray-800 rounded-xl text-sm font-medium text-white transition-colors flex-shrink-0"
         >
           <Plus className="w-4 h-4" />
           New Document

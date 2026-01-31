@@ -11,6 +11,7 @@ import Placeholder from '@tiptap/extension-placeholder'
 import Mention from '@tiptap/extension-mention'
 import { mentionSuggestion } from '../lib/mention'
 import TagInput from '../components/TagInput'
+import { KanbanIllust } from '../components/illustrations'
 import {
   Plus,
   MoreHorizontal,
@@ -133,11 +134,14 @@ export default function Kanban() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center justify-between px-6 lg:px-8 py-5 border-b border-gray-200">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Tasks</h1>
-          <p className="text-gray-500 text-sm mt-1">
-            {cards.length} task{cards.length !== 1 ? 's' : ''} across {columns.length} columns
-          </p>
+        <div className="flex items-center gap-5">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Tasks</h1>
+            <p className="text-gray-500 text-sm mt-1">
+              {cards.length} task{cards.length !== 1 ? 's' : ''} across {columns.length} columns
+            </p>
+          </div>
+          <KanbanIllust className="hidden lg:block w-28 h-20 opacity-[0.12]" />
         </div>
         {allTags.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">

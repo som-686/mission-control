@@ -29,6 +29,7 @@ import {
   RefreshCw,
   Loader2,
 } from 'lucide-react'
+import { DashboardIllust } from '../components/illustrations'
 
 // ── Fallback static data ────────────────────────────
 
@@ -286,23 +287,25 @@ export default function Dashboard() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto">
       {/* ── Hero / Welcome ─────────────────────── */}
       <div className="mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">
-              {greeting}, {userName} {emoji}
-            </h1>
-            <div className="mt-3 max-w-xl px-4 py-3 bg-gray-100 border-l-4 border-gray-900 rounded-r-xl">
-              <p className="text-gray-700 text-base italic font-medium leading-relaxed">
-                "{dailyQuote.text}"
-              </p>
-              <p className="text-gray-400 text-sm mt-1.5 not-italic">— {dailyQuote.author}</p>
+        <div className="flex items-center gap-6 mb-6">
+          <div className="flex-1 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">
+                {greeting}, {userName} {emoji}
+              </h1>
+              <div className="mt-3 max-w-xl px-4 py-3 bg-gray-100 border-l-4 border-gray-900 rounded-r-xl">
+                <p className="text-gray-700 text-base italic font-medium leading-relaxed">
+                  "{dailyQuote.text}"
+                </p>
+                <p className="text-gray-400 text-sm mt-1.5 not-italic">— {dailyQuote.author}</p>
+              </div>
             </div>
+            <p className="text-gray-400 text-sm font-medium tabular-nums">
+              {format(new Date(), 'EEEE, MMMM d, yyyy')}
+            </p>
           </div>
-          <p className="text-gray-400 text-sm font-medium tabular-nums">
-            {format(new Date(), 'EEEE, MMMM d, yyyy')}
-          </p>
+          <DashboardIllust className="hidden lg:block w-36 h-28 flex-shrink-0 opacity-[0.15]" />
         </div>
-
       </div>
 
       {/* ── Quick Actions ──────────────────────── */}
