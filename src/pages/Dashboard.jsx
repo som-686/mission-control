@@ -286,26 +286,26 @@ export default function Dashboard() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto">
       {/* ── Hero / Welcome ─────────────────────── */}
-      <div className="mb-8">
-        <div className="flex items-center gap-6 mb-6">
-          <div className="flex-1 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+      <div className="mb-8 bg-white border border-gray-200 rounded-2xl px-6 sm:px-8 py-6 flex items-center gap-6 overflow-hidden">
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-0">
             <div>
-              <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
                 {greeting}, {userName} {emoji}
               </h1>
-              <div className="mt-3 max-w-xl px-4 py-3 bg-gray-100 border-l-4 border-gray-900 rounded-r-xl">
-                <p className="text-gray-700 text-base italic font-medium leading-relaxed">
+              <div className="mt-3 max-w-xl px-4 py-2.5 bg-gray-50 border-l-4 border-gray-900 rounded-r-xl">
+                <p className="text-gray-700 text-sm italic font-medium leading-relaxed">
                   "{dailyQuote.text}"
                 </p>
-                <p className="text-gray-400 text-sm mt-1.5 not-italic">— {dailyQuote.author}</p>
+                <p className="text-gray-400 text-xs mt-1 not-italic">— {dailyQuote.author}</p>
               </div>
             </div>
-            <p className="text-gray-400 text-sm font-medium tabular-nums">
+            <p className="text-gray-400 text-sm font-medium tabular-nums flex-shrink-0">
               {format(new Date(), 'EEEE, MMMM d, yyyy')}
             </p>
           </div>
-          <DashboardIllust className="hidden lg:block w-36 h-28 flex-shrink-0 opacity-[0.15]" />
         </div>
+        <DashboardIllust className="hidden lg:block w-40 h-32 flex-shrink-0 opacity-20" />
       </div>
 
       {/* ── Quick Actions ──────────────────────── */}
